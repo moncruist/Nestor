@@ -11,3 +11,9 @@
 *.lai
 *.la
 *.a
+
+# Hidden files
+.*
+
+# Default build directory
+build
