@@ -38,7 +38,7 @@ namespace net {
 
 HttpClient::HttpClient(string host, bool manualConnect)
         throw (runtime_error) :
-        host_(host), manualConnect_(manualConnect), sockFd_(-1) {
+        host_(host), sockFd_(-1), manualConnect_(manualConnect) {
     try {
         if (!manualConnect_)
             connect();
@@ -142,6 +142,8 @@ vector<unsigned char>* HttpClient::getResource(string resource) {
         oss_err << "HttpClient::getResource: recv failed: " << strerror(errno);
         throw runtime_error(oss_err.str());
     }
+
+    delete[] tmpbuf;
 
     return result;
 }
