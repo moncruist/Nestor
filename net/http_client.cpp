@@ -1,9 +1,9 @@
 /*
  *  This file is part of Nestor.
  *
- *  Nestor - program for aggregation RSS subscriptions with access via
- *  IMAP interface.
- *  Copyright (C) 2013  Konstantin Zhukov moncruist@gmail.com
+ *  Nestor - program for aggregation RSS subscriptions providing
+ *  access via IMAP interface.
+ *  Copyright (C) 2013  Konstantin Zhukov
  *
  *  Nestor is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "http_response_parser.h"
 
 using namespace std;
 
@@ -91,10 +92,10 @@ void HttpClient::close() {
     }
 }
 
-vector<unsigned char>* HttpClient::getResource(string resource) {
+HttpResource * HttpClient::getResource(const string &resource) {
     ostringstream requestStr;
     ostringstream oss_err;
-    vector<unsigned char> *result;
+    string *result;
     unsigned char *tmpbuf;
     fd_set rdset;
     timeval timeout;
@@ -106,7 +107,6 @@ vector<unsigned char>* HttpClient::getResource(string resource) {
 
     requestStr << "GET " << resource << " HTTP/1.0\nHost: " << host_ << "\n\n";
     string str = requestStr.str();
-    cout << "Request string:\n" << str << endl;
     int sended = send(sockFd_, str.c_str(), str.length(), MSG_NOSIGNAL | MSG_DONTWAIT); // no SIGPIPE
     if (sended < 0) {
         oss_err << "HttpClient::getResource: send failed: " << strerror(errno);
@@ -117,7 +117,6 @@ vector<unsigned char>* HttpClient::getResource(string resource) {
     FD_SET(sockFd_, &rdset);
     timeout.tv_sec = 1;
     rc = select(sockFd_ + 1, &rdset, NULL, NULL, &timeout);
-    cout << "Select result: " << rc << endl;
     if (rc == 0) {
         throw runtime_error("HttpClient::getResource: recv timeout\n");
     } else if (rc < 0) {
@@ -127,13 +126,12 @@ vector<unsigned char>* HttpClient::getResource(string resource) {
         throw runtime_error(oss_err.str());
     }
 
-    result = new vector<unsigned char>();
+    result = new string();
     tmpbuf = new unsigned char[readbuf_size];
 
     int readed;
     while ((readed = recv(sockFd_, tmpbuf, sizeof(unsigned char) * readbuf_size, 0)) > 0) {
-        for(int i = 0; i < readed; i++)
-            result->push_back(tmpbuf[i]);
+        result->append(reinterpret_cast<const char *>(tmpbuf), readed);
     }
 
     if (readed < 0) {
@@ -143,9 +141,13 @@ vector<unsigned char>* HttpClient::getResource(string resource) {
         throw runtime_error(oss_err.str());
     }
 
+    HttpResponseParser parser;
+
     delete[] tmpbuf;
 
-    return result;
+    HttpResource *res = parser.parseRawData(*result);
+    delete result;
+    return res;
 }
 
 HttpClient::~HttpClient() {

@@ -18,40 +18,29 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see {http://www.gnu.org/licenses/}.
  */
-
-#ifndef HTTP_CLIENT_H_
-#define HTTP_CLIENT_H_
+#ifndef HTTP_RESPONCE_PARSER_H_
+#define HTTP_RESPONCE_PARSER_H_
 
 #include <string>
+#include <istream>
 #include <stdexcept>
-#include <vector>
-#include <netdb.h>
 #include "http_resource.h"
 
 namespace nestor {
 namespace net {
 
-class HttpClient {
+class HttpResponseParser {
 public:
-    HttpClient(std::string host = "localhost", bool manualConnect = false)
-            throw (std::runtime_error);
+    HttpResponseParser();
+    virtual ~HttpResponseParser();
 
-    void connect() throw (std::runtime_error);
+    HttpResource *parseRawData(const std::string &data);
 
-    void close();
-
-    HttpResource *getResource(const std::string &resource);
-
-    virtual ~HttpClient();
 private:
-    std::string host_;
-    int sockFd_;
-    bool manualConnect_;
-    addrinfo *servinfo;
-
-    static const int readbuf_size = 1024;
+    void parseInitLine(const std::string &l, HttpResource &output)
+            throw (std::runtime_error);
 };
 
-} /* namespace net */
+} /* namespace rss */
 } /* namespace nestor */
-#endif /* HTTP_CLIENT_H_ */
+#endif /* HTTP_RESPONCE_PARSER_H_ */

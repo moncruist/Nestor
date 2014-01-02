@@ -18,40 +18,21 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see {http://www.gnu.org/licenses/}.
  */
-
-#ifndef HTTP_CLIENT_H_
-#define HTTP_CLIENT_H_
+#ifndef UTILS_STRING_H_
+#define UTILS_STRING_H_
 
 #include <string>
-#include <stdexcept>
 #include <vector>
-#include <netdb.h>
-#include "http_resource.h"
 
 namespace nestor {
-namespace net {
+namespace utils {
 
-class HttpClient {
-public:
-    HttpClient(std::string host = "localhost", bool manualConnect = false)
-            throw (std::runtime_error);
+int split(const std::string &str, const std::string &sep,
+        std::vector<std::string> &array);
+std::istream& safeGetLine(std::istream& is, std::string& t);
+void stringToUpper(std::string &str);
+std::string stringToUpperCopy(std::string &str);
+}
+}
 
-    void connect() throw (std::runtime_error);
-
-    void close();
-
-    HttpResource *getResource(const std::string &resource);
-
-    virtual ~HttpClient();
-private:
-    std::string host_;
-    int sockFd_;
-    bool manualConnect_;
-    addrinfo *servinfo;
-
-    static const int readbuf_size = 1024;
-};
-
-} /* namespace net */
-} /* namespace nestor */
-#endif /* HTTP_CLIENT_H_ */
+#endif /* UTILS_STRING_H_ */

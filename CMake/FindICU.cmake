@@ -56,6 +56,20 @@ if(ICU_INCLUDE_DIR AND ICU_LIBRARY)
     set(ICU_I18N_FOUND 0)
     set(ICU_I18N_LIBRARIES)
   endif (ICU_I18N_LIBRARY)
+  
+   # Look for the ICU io libraries
+  find_library(
+    ICU_IO_LIBRARY
+    NAMES icuio cygicuio
+    DOC "Libraries to link against for ICU io")
+  mark_as_advanced(ICU_IO_LIBRARY)
+  if (ICU_IO_LIBRARY)
+    set(ICU_IO_FOUND 1)
+    set(ICU_IO_LIBRARIES ${ICU_IO_LIBRARY})
+  else (ICU_IO_LIBRARY)
+    set(ICU_IO_FOUND 0)
+    set(ICU_IO_LIBRARIES)
+  endif (ICU_IO_LIBRARY)
 
   # Look for the ICU data libraries
   find_library(

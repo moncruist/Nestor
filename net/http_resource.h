@@ -19,39 +19,38 @@
  *  along with this program.  If not, see {http://www.gnu.org/licenses/}.
  */
 
-#ifndef HTTP_CLIENT_H_
-#define HTTP_CLIENT_H_
+#ifndef HTTP_RESOURCE_H_
+#define HTTP_RESOURCE_H_
 
-#include <string>
-#include <stdexcept>
-#include <vector>
-#include <netdb.h>
-#include "http_resource.h"
+#include <unicode/unistr.h>
 
 namespace nestor {
 namespace net {
 
-class HttpClient {
+class HttpResource {
 public:
-    HttpClient(std::string host = "localhost", bool manualConnect = false)
-            throw (std::runtime_error);
+    HttpResource();
+    virtual ~HttpResource();
 
-    void connect() throw (std::runtime_error);
+    unsigned int code() const;
+    void setCode(unsigned int code);
+    unsigned int contentLength() const;
+    void setContentLength(unsigned int contentLength);
+    const icu::UnicodeString& encoding() const;
+    void setEncoding(const icu::UnicodeString& encoding);
+    const icu::UnicodeString& server() const;
+    void setServer(const icu::UnicodeString& server);
+    const icu::UnicodeString& codeDefinition() const;
+    void setCodeDefinition(const icu::UnicodeString& codeDefinition);
 
-    void close();
-
-    HttpResource *getResource(const std::string &resource);
-
-    virtual ~HttpClient();
 private:
-    std::string host_;
-    int sockFd_;
-    bool manualConnect_;
-    addrinfo *servinfo;
-
-    static const int readbuf_size = 1024;
+    icu::UnicodeString encoding_;
+    icu::UnicodeString server_;
+    icu::UnicodeString codeDefinition_;
+    unsigned int code_;
+    unsigned int contentLength_;
 };
 
 } /* namespace net */
 } /* namespace nestor */
-#endif /* HTTP_CLIENT_H_ */
+#endif /* HTTP_RESOURCE_H_ */
