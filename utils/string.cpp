@@ -90,6 +90,16 @@ string stringToUpperCopy(string &str) {
     return upperstr;
 }
 
+void stringToLower(string &str) {
+    transform(str.begin(), str.end(), str.begin(), ::tolower);
+}
+
+string stringToLowerCopy(string &str) {
+    string lowerstr = str;
+    stringToLower(lowerstr);
+    return lowerstr;
+}
+
 }
 }
 
