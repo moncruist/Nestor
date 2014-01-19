@@ -18,18 +18,19 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see {http://www.gnu.org/licenses/}.
  */
-#include <unicode/unistr.h>
+#include <string>
 #include "http_resource.h"
 
-using namespace icu;
-
+using namespace std;
 namespace nestor {
 namespace net {
 
 HttpResource::HttpResource() :
-    encoding_(UNICODE_STRING_SIMPLE("")),
-    server_(UNICODE_STRING_SIMPLE("")),
-    codeDefinition_(UNICODE_STRING_SIMPLE("")),
+    encoding_(""),
+    server_(""),
+    codeDefinition_(""),
+    contentType_(""),
+    contentCharset_(""),
     code_(0), contentLength_(0){
 
 }
@@ -54,29 +55,47 @@ void HttpResource::setContentLength(unsigned int contentLength) {
     contentLength_ = contentLength;
 }
 
-const icu::UnicodeString& HttpResource::encoding() const {
+const string& HttpResource::encoding() const {
     return encoding_;
 }
 
-void HttpResource::setEncoding(const icu::UnicodeString& encoding) {
+void HttpResource::setEncoding(const string& encoding) {
     encoding_ = encoding;
 }
 
-const icu::UnicodeString& HttpResource::server() const {
+const string& HttpResource::server() const {
     return server_;
 }
 
-void HttpResource::setServer(const icu::UnicodeString& server) {
+void HttpResource::setServer(const string& server) {
     server_ = server;
 }
 
-const icu::UnicodeString& HttpResource::codeDefinition() const {
+const string& HttpResource::codeDefinition() const {
     return codeDefinition_;
 }
 
-void HttpResource::setCodeDefinition(const icu::UnicodeString& codeDefinition) {
+void HttpResource::setCodeDefinition(const string& codeDefinition) {
     codeDefinition_ = codeDefinition;
+}
+
+const std::string& HttpResource::contentCharset() const {
+    return contentCharset_;
+}
+
+void HttpResource::setContentCharset(const std::string& contentCharset) {
+    contentCharset_ = contentCharset;
+}
+
+const std::string& HttpResource::contentType() const {
+    return contentType_;
+}
+
+void HttpResource::setContentType(const std::string& contentType) {
+    contentType_ = contentType;
 }
 
 } /* namespace net */
 } /* namespace nestor */
+
+

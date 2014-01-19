@@ -22,7 +22,7 @@
 #ifndef HTTP_RESOURCE_H_
 #define HTTP_RESOURCE_H_
 
-#include <unicode/unistr.h>
+#include <string>
 
 namespace nestor {
 namespace net {
@@ -36,17 +36,23 @@ public:
     void setCode(unsigned int code);
     unsigned int contentLength() const;
     void setContentLength(unsigned int contentLength);
-    const icu::UnicodeString& encoding() const;
-    void setEncoding(const icu::UnicodeString& encoding);
-    const icu::UnicodeString& server() const;
-    void setServer(const icu::UnicodeString& server);
-    const icu::UnicodeString& codeDefinition() const;
-    void setCodeDefinition(const icu::UnicodeString& codeDefinition);
+    const std::string& encoding() const;
+    void setEncoding(const std::string& encoding);
+    const std::string& server() const;
+    void setServer(const std::string& server);
+    const std::string& codeDefinition() const;
+    void setCodeDefinition(const std::string& codeDefinition);
+    const std::string& contentCharset() const;
+    void setContentCharset(const std::string& contentCharset);
+    const std::string& contentType() const;
+    void setContentType(const std::string& contentType);
 
 private:
-    icu::UnicodeString encoding_;
-    icu::UnicodeString server_;
-    icu::UnicodeString codeDefinition_;
+    std::string encoding_;
+    std::string server_;
+    std::string codeDefinition_;
+    std::string contentType_;
+    std::string contentCharset_;
     unsigned int code_;
     unsigned int contentLength_;
 };

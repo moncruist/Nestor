@@ -24,6 +24,7 @@
 #include <string>
 #include <istream>
 #include <stdexcept>
+#include <map>
 #include "http_resource.h"
 
 namespace nestor {
@@ -31,14 +32,43 @@ namespace net {
 
 class HttpResponseParser {
 public:
-    HttpResponseParser();
-    virtual ~HttpResponseParser();
 
-    HttpResource *parseRawData(const std::string &data);
+    /**
+     * Parses HTTP packet from raw data.
+     * @param data Raw data (e.g. from socket)
+     * @return HttpResource
+     */
+    static HttpResource *parseRawData(const std::string &data);
 
 private:
-    void parseInitLine(const std::string &l, HttpResource &output)
+    /**
+     * Parses initial line of HTTP response and assign result code
+     * to HttpResource object.
+     * @param l initial line of HTTP response
+     * @param output resource object
+     */
+    static void parseInitLine(const std::string &l, HttpResource &output)
             throw (std::runtime_error);
+
+    /**
+     * Extract field name from line in HTTP header.
+     * @param str line in HTTP header
+     * @param[out] last_pos last character index of extracted field name. -1 on error
+     * @return field name. On error field name is empty string and last_pos is -1.
+     */
+    static std::string extractFieldName(const std::string &str, int &last_pos);
+
+    /**
+     * Combine new value with previous.
+     */
+    static std::map<std::string, std::string> &
+    combineValue(std::map<std::string, std::string> &values,
+            std::string name, std::string value);
+
+    static void bindValues(const std::map<std::string, std::string> &values, HttpResource &output);
+
+    static const std::string contentLengthField;
+    static const std::string contentTypeField;
 };
 
 } /* namespace rss */

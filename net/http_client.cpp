@@ -141,11 +141,9 @@ HttpResource * HttpClient::getResource(const string &resource) {
         throw runtime_error(oss_err.str());
     }
 
-    HttpResponseParser parser;
-
     delete[] tmpbuf;
 
-    HttpResource *res = parser.parseRawData(*result);
+    HttpResource *res = HttpResponseParser::parseRawData(*result);
     delete result;
     return res;
 }
