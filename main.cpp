@@ -48,4 +48,7 @@ int main(int argc, char *argv[]) {
     HttpResource *response = client.getResource(example_rss_resource);
     cout << "Code: " << response->code() << endl;
     cout << "Code definition: " << response->codeDefinition() << endl;
+    cout << "Content type: " << response->contentType() << endl;
+    cout << "Content charset: " << response->contentCharset() << endl;
+    cout << "Content length: " << response->contentLength() << endl;
 }
