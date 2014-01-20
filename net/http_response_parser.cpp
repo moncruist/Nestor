@@ -37,8 +37,10 @@ using namespace nestor::utils;
 namespace nestor {
 namespace net {
 
-const std::string HttpResponseParser::contentLengthField = "content-length";
-const std::string HttpResponseParser::contentTypeField = "content-type";
+const std::string HttpResponseParser::CONTENT_LENGTH_FIELD = "content-length";
+const std::string HttpResponseParser::CONTENT_TYPE_FIELD = "content-type";
+const std::string HttpResponseParser::SERVER_FIELD = "server";
+const std::string HttpResponseParser::CONTENT_ENCODING_FIELD = "content-encoding";
 
 HttpResource* HttpResponseParser::parseRawData(const std::string &data) {
     istringstream iss(data);
@@ -102,6 +104,12 @@ HttpResource* HttpResponseParser::parseRawData(const std::string &data) {
     }
 
     bindValues(values, *resource);
+
+    if (resource->contentLength() > 0) {
+        unsigned char *content = new unsigned char[resource->contentLength()];
+        iss.read(reinterpret_cast<char *>(content), resource->contentLength());
+        resource->setContent(content);
+    }
 
     return resource;
 }
@@ -203,8 +211,8 @@ void HttpResponseParser::bindValues(const map<string, string>& values,
     // All magic goes here
 
     // Content-Length field
-    if (values.count(contentLengthField)) {
-        string strLength = values.at(contentLengthField);
+    if (values.count(CONTENT_LENGTH_FIELD)) {
+        string strLength = values.at(CONTENT_LENGTH_FIELD);
         unsigned int length = strtol(strLength.c_str(), NULL, 10);
         output.setContentLength(length);
     } else {
@@ -212,8 +220,8 @@ void HttpResponseParser::bindValues(const map<string, string>& values,
     }
 
     // Content-Type field
-    if (values.count(contentTypeField)) {
-        string type = values.at(contentTypeField);
+    if (values.count(CONTENT_TYPE_FIELD)) {
+        string type = values.at(CONTENT_TYPE_FIELD);
 
         vector<string> typeParts, params;
         split(type, ";", typeParts);
@@ -236,7 +244,21 @@ void HttpResponseParser::bindValues(const map<string, string>& values,
         output.setContentCharset("");
     }
 
+    // Server field
+    if (values.count(SERVER_FIELD)) {
+        string server = values.at(SERVER_FIELD);
+        output.setServer(server);
+    } else {
+        output.setServer("");
+    }
 
+    // Content-Encoding field
+    if (values.count(CONTENT_ENCODING_FIELD)) {
+        string encoding = values.at(CONTENT_ENCODING_FIELD);
+        output.setServer(encoding);
+    } else {
+        output.setServer("");
+    }
 }
 
 } /* namespace rss */

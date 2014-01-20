@@ -31,12 +31,15 @@ HttpResource::HttpResource() :
     codeDefinition_(""),
     contentType_(""),
     contentCharset_(""),
-    code_(0), contentLength_(0){
+    code_(0), contentLength_(0),
+    content_(nullptr) {
 
 }
 
 HttpResource::~HttpResource() {
-    // TODO Auto-generated destructor stub
+    if (content_) {
+        delete[] content_;
+    }
 }
 
 unsigned int HttpResource::code() const {
@@ -93,6 +96,14 @@ const std::string& HttpResource::contentType() const {
 
 void HttpResource::setContentType(const std::string& contentType) {
     contentType_ = contentType;
+}
+
+unsigned char* HttpResource::content() const {
+    return content_;
+}
+
+void HttpResource::setContent(unsigned char* content) {
+    content_ = content;
 }
 
 } /* namespace net */

@@ -46,6 +46,8 @@ public:
     void setContentCharset(const std::string& contentCharset);
     const std::string& contentType() const;
     void setContentType(const std::string& contentType);
+    unsigned char* content() const;
+    void setContent(unsigned char* content);
 
 private:
     std::string encoding_;
@@ -55,6 +57,8 @@ private:
     std::string contentCharset_;
     unsigned int code_;
     unsigned int contentLength_;
+
+    unsigned char *content_;
 };
 
 } /* namespace net */

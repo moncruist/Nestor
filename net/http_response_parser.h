@@ -67,8 +67,10 @@ private:
 
     static void bindValues(const std::map<std::string, std::string> &values, HttpResource &output);
 
-    static const std::string contentLengthField;
-    static const std::string contentTypeField;
+    static const std::string CONTENT_LENGTH_FIELD;
+    static const std::string CONTENT_TYPE_FIELD;
+    static const std::string SERVER_FIELD;
+    static const std::string CONTENT_ENCODING_FIELD;
 };
 
 } /* namespace rss */
