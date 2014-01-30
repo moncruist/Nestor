@@ -32,9 +32,13 @@
 #include <unicode/utypes.h>
 
 
+#include "rss/rss_xml_parser.h"
+#include "rss/rss_channel.h"
+
 
 using namespace std;
 using namespace nestor::net;
+using namespace nestor::rss;
 using namespace icu;
 
 
@@ -51,4 +55,10 @@ int main(int argc, char *argv[]) {
     cout << "Content type: " << response->contentType() << endl;
     cout << "Content charset: " << response->contentCharset() << endl;
     cout << "Content length: " << response->contentLength() << endl;
+
+    RssChannel *channel = RssXmlParser::parseRss(reinterpret_cast<char *>(response->content()));
+    cout << "Rss channel info" << endl;
+    cout << "Title: " << channel->title() << endl;
+    cout << "Link: " << channel->link() << endl;
+    cout << "Description: " << channel->description() << endl;
 }

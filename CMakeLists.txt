@@ -15,6 +15,8 @@ set(SRC_LIST main.cpp
              net/http_response_parser.h
              rss/rss_object.cpp
              rss/rss_object.h
+             rss/rss_channel.cpp
+             rss/rss_channel.h
              rss/rss_xml_parser.cpp
              rss/rss_xml_parser.h)
 include_directories(${nestor_SOURCE_DIR})
