@@ -61,4 +61,16 @@ int main(int argc, char *argv[]) {
     cout << "Title: " << channel->title() << endl;
     cout << "Link: " << channel->link() << endl;
     cout << "Description: " << channel->description() << endl;
+
+    for (auto i = channel->optional().begin(); i != channel->optional().end(); i++) {
+        cout << "[" << i->first << "] => " << i->second << endl;
+    }
+
+    cout << "Items count " << channel->itemsCount() << endl;
+    for (unsigned int i = 0; i < channel->itemsCount(); i++) {
+        RssObject *item = channel->getItem(i);
+        cout << "Title: " << item->caption() << endl;
+        cout << "Text: " << item->text() << endl;
+        cout << "Link: " << item->link() << endl;
+    }
 }

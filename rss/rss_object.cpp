@@ -11,7 +11,7 @@ namespace nestor {
 namespace rss {
 
 RssObject::RssObject() :
-    caption(""), text("") {
+    _caption(""), _text(""), _link("") {
     // TODO Auto-generated constructor stub
 
 }
@@ -20,20 +20,28 @@ RssObject::~RssObject() {
     // TODO Auto-generated destructor stub
 }
 
-const icu::UnicodeString& RssObject::getCaption() const {
-    return caption;
+const icu::UnicodeString& RssObject::caption() const {
+    return _caption;
 }
 
 void RssObject::setCaption(const icu::UnicodeString& caption) {
-    this->caption = caption;
+    this->_caption = caption;
 }
 
-const icu::UnicodeString& RssObject::getText() const {
-    return text;
+const icu::UnicodeString& RssObject::text() const {
+    return _text;
 }
 
 void RssObject::setText(const icu::UnicodeString& text) {
-    this->text = text;
+    this->_text = text;
+}
+
+const icu::UnicodeString& RssObject::link() const {
+    return _link;
+}
+
+void RssObject::setLink(const icu::UnicodeString& link) {
+    _link = link;
 }
 
 } /* namespace rss */

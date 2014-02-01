@@ -8,6 +8,8 @@
 #include <tinyxml2.h>
 #include <iostream>
 #include <sstream>
+#include <unordered_set>
+#include <map>
 
 #include "utils/string.h"
 #include "rss_xml_parser.h"
@@ -26,6 +28,43 @@ const char *RssXmlParser::CHANNEL_ITEM = "channel";
 const char *RssXmlParser::TITLE_ITEM = "title";
 const char *RssXmlParser::LINK_ITEM = "link";
 const char *RssXmlParser::DESCRIPTION_ITEM = "description";
+const char *RssXmlParser::ITEM_TAG = "item";
+
+
+static XMLElement *getExpectedElement(XMLElement *parent, const char *name)
+        throw (RssXmlParserException) {
+    XMLElement *result = parent->FirstChildElement(name);
+    if (result == nullptr) {
+        ostringstream oerr;
+        oerr << "Missing element \"" << name << "\" in parent \"" << parent->Name() << "\"";
+        throw RssXmlParserException(oerr.str());
+    }
+    return result;
+}
+
+
+static vector<RssObject *> *parseItems(XMLElement *channel) {
+    vector<RssObject *> *items = new vector<RssObject *>();
+    XMLElement *rssItem = channel->FirstChildElement(RssXmlParser::ITEM_TAG);
+    while (rssItem != nullptr) {
+        RssObject *obj = new RssObject();
+
+        try {
+            obj->setCaption(UnicodeString(getExpectedElement(rssItem, RssXmlParser::TITLE_ITEM)->GetText()));
+            obj->setLink(UnicodeString(getExpectedElement(rssItem, RssXmlParser::LINK_ITEM)->GetText()));
+            obj->setText(UnicodeString(getExpectedElement(rssItem, RssXmlParser::DESCRIPTION_ITEM)->GetText()));
+        } catch (RssXmlParserException &e) {
+            delete obj;
+            rssItem = rssItem->NextSiblingElement(RssXmlParser::ITEM_TAG);
+            continue;
+        }
+
+        items->push_back(obj);
+        rssItem = rssItem->NextSiblingElement(RssXmlParser::ITEM_TAG);
+    }
+    return items;
+}
+
 
 RssChannel *RssXmlParser::parseRss(const char *rss)
         throw (RssXmlParserException) {
@@ -49,37 +88,46 @@ RssChannel *RssXmlParser::parseRss(const char *rss)
         throw RssXmlParserException(oss_err.str());
     }
 
-    channel = root->FirstChildElement(CHANNEL_ITEM);
-    if (channel == nullptr)
-        throw RssXmlParserException("Missing channel element");
+    channel = getExpectedElement(root, CHANNEL_ITEM);
 
 
     rssChannel = new RssChannel();
 
-    tmp = channel->FirstChildElement(TITLE_ITEM);
-    if (tmp == nullptr) {
+    // Parsing RSS <channel> tag
+    // Required tags
+    try {
+        rssChannel->setTitle(UnicodeString(getExpectedElement(channel, TITLE_ITEM)->GetText()));
+        rssChannel->setLink(UnicodeString(getExpectedElement(channel, LINK_ITEM)->GetText()));
+        rssChannel->setDescription(UnicodeString(getExpectedElement(channel, DESCRIPTION_ITEM)->GetText()));
+
+    } catch (RssXmlParserException &e) {
         delete rssChannel;
-        throw RssXmlParserException("Missing title element");
+        throw;
     }
 
-    rssChannel->setTitle(UnicodeString(tmp->GetText()));
+    // Optional tags
+    unordered_set<string> alreadyParsed = {TITLE_ITEM, LINK_ITEM, DESCRIPTION_ITEM,
+            ITEM_TAG /* will parse "item" later*/ };
+    map<UnicodeString, UnicodeString> optionalTags;
 
-    tmp = channel->FirstChildElement(LINK_ITEM);
-    if (tmp == nullptr) {
-        delete rssChannel;
-        throw RssXmlParserException("Missing link element");
-    }
+    tmp = channel->FirstChildElement();
+    do {
+        if (alreadyParsed.count(tmp->Name())) {
+            tmp = tmp->NextSiblingElement();
+            continue;
+        }
 
-    rssChannel->setLink(UnicodeString(tmp->GetText()));
+        optionalTags.insert(make_pair(tmp->Name(), tmp->GetText()));
+        tmp = tmp->NextSiblingElement();
+    } while(tmp != nullptr);
 
-    tmp = channel->FirstChildElement(DESCRIPTION_ITEM);
-    if (tmp == nullptr) {
-        delete rssChannel;
-        throw RssXmlParserException("Missing description element");
-    }
+    rssChannel->setOptional(optionalTags);
 
-    rssChannel->setDescription(UnicodeString(tmp->GetText()));
+    auto items = parseItems(channel);
+    for (auto i : *items)
+        rssChannel->addItem(i);
 
+    delete items;
 
     return rssChannel;
 }

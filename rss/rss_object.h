@@ -17,14 +17,17 @@ class RssObject {
 public:
     RssObject();
     virtual ~RssObject();
-    const icu::UnicodeString& getCaption() const;
+    const icu::UnicodeString& caption() const;
     void setCaption(const icu::UnicodeString& caption);
-    const icu::UnicodeString& getText() const;
+    const icu::UnicodeString& text() const;
     void setText(const icu::UnicodeString& text);
+    const icu::UnicodeString& link() const;
+    void setLink(const icu::UnicodeString& link);
 
 private:
-    icu::UnicodeString caption;
-    icu::UnicodeString text;
+    icu::UnicodeString _caption;
+    icu::UnicodeString _text;
+    icu::UnicodeString _link;
 };
 
 } /* namespace rss */

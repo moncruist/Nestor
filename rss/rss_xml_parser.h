@@ -30,6 +30,7 @@ public:
     static const char *TITLE_ITEM;
     static const char *LINK_ITEM;
     static const char *DESCRIPTION_ITEM;
+    static const char *ITEM_TAG;
 public:
     static RssChannel *parseRss(const char *rss)
             throw (RssXmlParserException);

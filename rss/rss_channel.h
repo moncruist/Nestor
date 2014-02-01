@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include <unicode/unistr.h>
 #include "rss_object.h"
@@ -48,11 +49,15 @@ public:
     const icu::UnicodeString& title() const;
     void setTitle(const icu::UnicodeString& title);
 
+    const std::map<icu::UnicodeString, icu::UnicodeString> &optional() const;
+    void setOptional(const std::map<icu::UnicodeString, icu::UnicodeString> &tags);
+
 private:
     icu::UnicodeString _title;
     icu::UnicodeString _link;
     icu::UnicodeString _description;
     std::vector<RssObject *> _items;
+    std::map<icu::UnicodeString, icu::UnicodeString> _optional;
 };
 
 } /* namespace rss */

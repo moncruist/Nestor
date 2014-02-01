@@ -18,7 +18,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see {http://www.gnu.org/licenses/}.
  */
-
 #include "rss_channel.h"
 
 using namespace std;
@@ -79,5 +78,18 @@ void RssChannel::setTitle(const icu::UnicodeString& title) {
     _title = title;
 }
 
+const map<UnicodeString, UnicodeString>& RssChannel::optional() const {
+    return _optional;
+}
+
+void RssChannel::setOptional(const map<UnicodeString, UnicodeString>& tags) {
+    _optional.clear();
+    for (auto i = tags.cbegin(); i != tags.cend(); i++) {
+        _optional.insert(make_pair((*i).first, (*i).second));
+    }
+}
+
 } /* namespace rss */
 } /* namespace nestor */
+
+
