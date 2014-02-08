@@ -53,11 +53,11 @@ public:
     void setOptional(const std::map<icu::UnicodeString, icu::UnicodeString> &tags);
 
 private:
-    icu::UnicodeString _title;
-    icu::UnicodeString _link;
-    icu::UnicodeString _description;
-    std::vector<RssObject *> _items;
-    std::map<icu::UnicodeString, icu::UnicodeString> _optional;
+    icu::UnicodeString title_;
+    icu::UnicodeString link_;
+    icu::UnicodeString description_;
+    std::vector<RssObject *> items_;
+    std::map<icu::UnicodeString, icu::UnicodeString> optional_;
 };
 
 } /* namespace rss */

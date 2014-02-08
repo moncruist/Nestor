@@ -38,9 +38,9 @@ public:
     void setLink(const icu::UnicodeString& link);
 
 private:
-    icu::UnicodeString _caption;
-    icu::UnicodeString _text;
-    icu::UnicodeString _link;
+    icu::UnicodeString caption_;
+    icu::UnicodeString text_;
+    icu::UnicodeString link_;
 };
 
 } /* namespace rss */

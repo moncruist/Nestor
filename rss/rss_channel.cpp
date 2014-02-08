@@ -31,61 +31,61 @@ RssChannel::RssChannel()
 
 RssChannel::RssChannel(icu::UnicodeString title, icu::UnicodeString link,
         icu::UnicodeString description)
-        : _title(title), _link(link), _description(description) {
+        : title_(title), link_(link), description_(description) {
 }
 
 RssChannel::~RssChannel() {
-    for (auto i : _items)
+    for (auto i : items_)
         delete i;
-    _items.clear();
+    items_.clear();
 }
 
 void RssChannel::addItem(RssObject* item) {
-    _items.push_back(item);
+    items_.push_back(item);
 }
 
 RssObject* RssChannel::getItem(unsigned int idx) const {
-    if (idx < _items.size())
-        return _items[idx];
+    if (idx < items_.size())
+        return items_[idx];
     return nullptr;
 }
 
 unsigned int RssChannel::itemsCount() const {
-    return _items.size();
+    return items_.size();
 }
 
 const icu::UnicodeString& RssChannel::description() const {
-    return _description;
+    return description_;
 }
 
 void RssChannel::setDescription(const icu::UnicodeString& description) {
-    _description = description;
+    description_ = description;
 }
 
 const icu::UnicodeString& RssChannel::link() const {
-    return _link;
+    return link_;
 }
 
 void RssChannel::setLink(const icu::UnicodeString& link) {
-    _link = link;
+    link_ = link;
 }
 
 const icu::UnicodeString& RssChannel::title() const {
-    return _title;
+    return title_;
 }
 
 void RssChannel::setTitle(const icu::UnicodeString& title) {
-    _title = title;
+    title_ = title;
 }
 
 const map<UnicodeString, UnicodeString>& RssChannel::optional() const {
-    return _optional;
+    return optional_;
 }
 
 void RssChannel::setOptional(const map<UnicodeString, UnicodeString>& tags) {
-    _optional.clear();
+    optional_.clear();
     for (auto i = tags.cbegin(); i != tags.cend(); i++) {
-        _optional.insert(make_pair((*i).first, (*i).second));
+        optional_.insert(make_pair((*i).first, (*i).second));
     }
 }
 
