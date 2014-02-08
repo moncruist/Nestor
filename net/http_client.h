@@ -27,29 +27,23 @@
 #include <vector>
 #include <netdb.h>
 #include "http_resource.h"
+#include "socket_single.h"
 
 namespace nestor {
 namespace net {
 
 class HttpClient {
 public:
-    HttpClient(std::string host = "localhost", bool manualConnect = false)
+    HttpClient(std::string host = "localhost")
             throw (std::runtime_error);
 
-    void connect() throw (std::runtime_error);
-
-    void close();
-
-    HttpResource *getResource(const std::string &resource);
+    HttpResource *getResource(const std::string &resource)
+        throw(std::runtime_error);
 
     virtual ~HttpClient();
 private:
+    SocketSingle *sock_;
     std::string host_;
-    int sockFd_;
-    bool manualConnect_;
-    addrinfo *servinfo;
-
-    static const int readbuf_size = 1024;
 };
 
 } /* namespace net */

@@ -9,6 +9,10 @@ set(SRC_LIST main.cpp
              utils/string.h
              net/http_client.cpp
              net/http_client.h
+             net/abstract_client_socket.cpp
+             net/abstract_client_socket.h
+             net/socket_single.cpp
+             net/socket_single.h
              net/http_resource.cpp
              net/http_resource.h
              net/http_response_parser.cpp

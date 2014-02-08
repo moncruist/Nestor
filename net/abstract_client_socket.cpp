@@ -18,46 +18,19 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see {http://www.gnu.org/licenses/}.
  */
-#include "http_client.h"
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <cstring>
-
-
-#include "http_response_parser.h"
-
-using namespace std;
+#include "abstract_client_socket.h"
 
 namespace nestor {
 namespace net {
 
-HttpClient::HttpClient(string host)
-        throw (runtime_error)
-        : sock_(nullptr), host_(host) {
-    sock_ = new SocketSingle(host, 80);
+AbstractClientSocket::AbstractClientSocket() {
+    // TODO Auto-generated constructor stub
+
 }
 
-HttpResource * HttpClient::getResource(const string &resource)
-        throw(std::runtime_error) {
-    ostringstream requestStr;
-    string *result;
-
-    requestStr << "GET " << resource << " HTTP/1.1\r\nHost: " << host_ << "\r\n\r\n";
-    string str = requestStr.str();
-    sock_->write(requestStr.str());
-
-    result = new string(sock_->read());
-
-    HttpResource *res = HttpResponseParser::parseRawData(*result);
-    delete result;
-    return res;
-}
-
-HttpClient::~HttpClient() {
-    if (sock_) sock_->close();
+AbstractClientSocket::~AbstractClientSocket() {
+    // TODO Auto-generated destructor stub
 }
 
 } /* namespace net */
 } /* namespace nestor */
-
