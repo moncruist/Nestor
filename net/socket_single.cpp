@@ -220,9 +220,13 @@ size_t SocketSingle::read(char* buf, size_t buflen)
 
         res = recv(sockFd_, &buf[readed], buflen - readed, 0);
 
-        if (res < 0 && errno != EWOULDBLOCK) {
-            oss_err << "SocketSingle::read error " << strerror(errno);
-            throw SocketIOException(oss_err.str());
+        if (res < 0){
+            if(errno != EWOULDBLOCK) {
+                oss_err << "SocketSingle::read error " << strerror(errno);
+                throw SocketIOException(oss_err.str());
+            } else {
+                break;
+            }
         }
 
         readed += res;
@@ -236,7 +240,7 @@ std::string SocketSingle::read() throw (SocketTimeoutException,
         SocketIOException) {
     char buf[1024];
     int readed;
-    string result;
+    string result = "";
     while ((readed = read(buf, 1024)) > 0) {
         result.append(buf, readed);
     }

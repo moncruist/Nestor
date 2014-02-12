@@ -17,6 +17,8 @@ set(SRC_LIST main.cpp
              net/http_resource.h
              net/http_response_parser.cpp
              net/http_response_parser.h
+             net/io_observer.cpp
+             net/io_observer.h
              rss/rss_object.cpp
              rss/rss_object.h
              rss/rss_channel.cpp
