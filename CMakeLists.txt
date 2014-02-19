@@ -9,10 +9,10 @@ set(SRC_LIST main.cpp
              utils/string.h
              net/http_client.cpp
              net/http_client.h
-             net/abstract_client_socket.cpp
-             net/abstract_client_socket.h
              net/socket_single.cpp
              net/socket_single.h
+             net/socket_listener.cpp
+             net/socket_listener.h
              net/http_resource.cpp
              net/http_resource.h
              net/http_response_parser.cpp
@@ -26,7 +26,14 @@ set(SRC_LIST main.cpp
              rss/rss_xml_parser.cpp
              rss/rss_xml_parser.h)
 include_directories(${nestor_SOURCE_DIR})
+
+add_definitions(-DBOOST_LOG_DYN_LINK)
+
 find_package(ICU REQUIRED)
+find_package(Boost 1.54 COMPONENTS log REQUIRED)
+find_package(Threads)
+include_directories(${Boost_INCLUDE_DIR})
+
 if(NOT ICU_FOUND)
 	message(SEND_ERROR "Cannot find icu library")
 	return()
@@ -42,9 +49,12 @@ else()
 	include_directories(${TINYXML2_INCLUDE_DIR})
 endif()
 
+
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${PROJECT_NAME} ${ICU_LIBRARIES}
                                       ${ICU_DATA_LIBRARIES}
                                       ${ICU_IO_LIBRARIES}
                                       ${ICU_I18N_LIBRARIES}
-                                      ${TINYXML2_LIBRARY})
+                                      ${TINYXML2_LIBRARY}
+                                      ${Boost_LOG_LIBRARY}
+                                      ${CMAKE_THREAD_LIBS_INIT})

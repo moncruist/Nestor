@@ -44,10 +44,10 @@ enum SocketSelectResult {
 };
 
 SocketSingle::SocketSingle(string host, unsigned short port, bool manualConnect,
-        unsigned int timeoutMs) throw (SocketTimeoutException,
-                SocketIOException)
+        unsigned int timeoutMs, bool nonblocking)
+                throw (SocketTimeoutException, SocketIOException)
         : host_(host), port_(port), sockFd_(-1), manualConnect_(manualConnect), connected_(
-                false), timeoutMs_(timeoutMs) {
+                false), timeoutMs_(timeoutMs), nonblocking_(nonblocking) {
     try {
         if (!manualConnect_)
             connect();
@@ -56,6 +56,19 @@ SocketSingle::SocketSingle(string host, unsigned short port, bool manualConnect,
         throw;
     }
 }
+
+
+SocketSingle::SocketSingle(int fd, unsigned int timeoutMs, bool nonblocking)
+        : timeoutMs_(timeoutMs){
+    if (fd >= 0) {
+        connected_ = true;
+        sockFd_ = fd;
+        setNonBlocking(nonblocking);
+    } else {
+        nonblocking_ = nonblocking;
+    }
+}
+
 
 void SocketSingle::connect() throw (SocketTimeoutException, SocketIOException) {
     addrinfo hints, *servinfo;
@@ -90,20 +103,8 @@ void SocketSingle::connect() throw (SocketTimeoutException, SocketIOException) {
     }
 
     // Making nonblocking socket if timeout was specified
-    if (timeoutMs_) {
-        int flags = fcntl(sockFd_, F_GETFL, 0);
-        if (flags < 0) {
-            oss_err << "SocketSingle::connect() fcntl get error: "
-                    << strerror(errno);
-            goto error;
-        }
-
-        flags |= O_NONBLOCK;
-        if (fcntl(sockFd_, F_SETFL, flags) != 0) {
-            oss_err << "SocketSingle::connect() fcntl set error: "
-                    << strerror(errno);
-            goto error;
-        }
+    if (nonblocking_) {
+        setNonBlocking(nonblocking_);
     }
 
     if ((res = ::connect(sockFd_, servinfo->ai_addr, servinfo->ai_addrlen))
@@ -132,7 +133,8 @@ void SocketSingle::connect() throw (SocketTimeoutException, SocketIOException) {
     freeaddrinfo(servinfo);
     return;
 
-    error: freeaddrinfo(servinfo);
+    error:
+    freeaddrinfo(servinfo);
     close();
     if (was_timeout)
         throw SocketTimeoutException(oss_err.str());
@@ -149,7 +151,7 @@ void SocketSingle::close() {
         return;
 
     if (sockFd_ >= 0) {
-        shutdown(sockFd_, 2);
+        shutdown(sockFd_, SHUT_RDWR);
         ::close(sockFd_);
         sockFd_ = -1;
     }
@@ -181,7 +183,7 @@ void SocketSingle::write(const char* buf, size_t buflen)
         }
 
         if ((res = send(sockFd_, &buf[sended], buflen - sended, 0)) < 0) {
-            if (errno != EWOULDBLOCK) {
+            if (!nonblocking_ || errno != EWOULDBLOCK) {
                 oss_err << "SocketSingle::write send error " << strerror(errno);
                 throw SocketIOException(oss_err.str());
             }
@@ -200,43 +202,38 @@ size_t SocketSingle::read(char* buf, size_t buflen)
         throw (SocketTimeoutException, SocketIOException) {
     ostringstream oss_err;
     size_t readed = 0;
-    int res;
-    do {
-        if (timeoutMs_) {
-            int state = wait(true, false);
+    int res = 0;
 
-            if (state & SOCKET_ERROR) {
-                oss_err << "SocketSingle::read wait error " << strerror(errno);
-                throw SocketIOException(oss_err.str());
-            }
+    if (timeoutMs_) {
+        int state = wait(true, false);
 
-            if (state & SOCKET_TIMEOUT)
-                throw SocketTimeoutException("SocketSingle::read timeout");
-            if (!(state & SOCKET_READY_READ)) {
-                break;
-            }
-
+        if (state & SOCKET_ERROR) {
+            oss_err << "SocketSingle::read wait error " << strerror(errno);
+            throw SocketIOException(oss_err.str());
         }
 
-        res = recv(sockFd_, &buf[readed], buflen - readed, 0);
-
-        if (res < 0){
-            if(errno != EWOULDBLOCK) {
-                oss_err << "SocketSingle::read error " << strerror(errno);
-                throw SocketIOException(oss_err.str());
-            } else {
-                break;
-            }
+        if (state & SOCKET_TIMEOUT)
+            throw SocketTimeoutException("SocketSingle::read timeout");
+        if (!(state & SOCKET_READY_READ)) {
+            return res;
         }
 
-        readed += res;
-        if (readed == buflen)
-            break;
-    } while (res != 0);
+    }
+
+    res = recv(sockFd_, &buf[readed], buflen - readed, 0);
+
+    if (res < 0) {
+        if (!nonblocking_ || errno != EWOULDBLOCK) {
+            oss_err << "SocketSingle::read error " << strerror(errno);
+            throw SocketIOException(oss_err.str());
+        }
+    }
+
+    readed += res;
     return readed;
 }
 
-std::string SocketSingle::read() throw (SocketTimeoutException,
+std::string SocketSingle::readAll() throw (SocketTimeoutException,
         SocketIOException) {
     char buf[1024];
     int readed;
@@ -245,6 +242,41 @@ std::string SocketSingle::read() throw (SocketTimeoutException,
         result.append(buf, readed);
     }
     return result;
+}
+
+void SocketSingle::setNonBlocking(bool nonblocking) throw (SocketIOException) {
+    ostringstream oss_err;
+    nonblocking_ = nonblocking;
+
+    if (!connected_) return; // avoid setting on unexisted socket
+
+    int flags = fcntl(sockFd_, F_GETFL, 0);
+    if (flags < 0) {
+        oss_err << "SocketSingle::setNonBlocking() fcntl get error: "
+                << strerror(errno);
+        throw SocketIOException(oss_err.str());
+    }
+
+    if (nonblocking)
+        flags |= O_NONBLOCK;
+    else
+        flags &= ~O_NONBLOCK;
+
+    if (fcntl(sockFd_, F_SETFL, flags) != 0) {
+        oss_err << "SocketSingle::setNonBlocking() fcntl set error: "
+                << strerror(errno);
+        throw SocketIOException(oss_err.str());
+    }
+
+}
+
+
+unsigned int SocketSingle::timeout() const {
+    return timeoutMs_;
+}
+
+void SocketSingle::setTimeout(unsigned int timeoutMs) {
+    timeoutMs_ = timeoutMs;
 }
 
 /* returns SocketSelectResult flags */

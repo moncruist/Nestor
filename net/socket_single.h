@@ -23,16 +23,29 @@
 
 #include <stdexcept>
 #include <string>
-#include "abstract_client_socket.h"
 
 namespace nestor {
 namespace net {
 
-class SocketSingle: public AbstractClientSocket {
+class SocketTimeoutException : public std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+class SocketIOException : public std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+
+class SocketSingle {
 public:
     SocketSingle(std::string host = "localhost", unsigned short port = 80,
-            bool manualConnect = false, unsigned int timeoutMs = 1000)
-                    throw (SocketTimeoutException, SocketIOException);
+            bool manualConnect = false, unsigned int timeoutMs = 1000,
+            bool nonblocking = true) throw (SocketTimeoutException,
+                    SocketIOException);
+
+    SocketSingle(int fd, unsigned int timeoutMs = 1000,
+            bool nonblocking = true);
+
     virtual void connect()
             throw (SocketTimeoutException, SocketIOException);
     virtual void close();
@@ -45,11 +58,16 @@ public:
 
     virtual size_t read(char *buf, size_t buflen)
             throw (SocketTimeoutException, SocketIOException);
-    virtual std::string read()
+    virtual std::string readAll()
             throw (SocketTimeoutException, SocketIOException);
 
     virtual bool connected() const;
     virtual int descriptor() const;
+
+    unsigned int timeout() const;
+    void setTimeout(unsigned int timeoutMs);
+
+    void setNonBlocking(bool nonblocking) throw (SocketIOException);
 
     virtual ~SocketSingle();
 
@@ -63,6 +81,7 @@ private:
     bool manualConnect_;
     bool connected_;
     unsigned int timeoutMs_;
+    bool nonblocking_;
 };
 
 } /* namespace net */

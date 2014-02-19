@@ -31,6 +31,7 @@
 #include <unicode/ucnv.h>
 #include <unicode/utypes.h>
 
+#include <boost/log/trivial.hpp>
 
 #include "rss/rss_xml_parser.h"
 #include "rss/rss_channel.h"
@@ -41,6 +42,8 @@ using namespace nestor::net;
 using namespace nestor::rss;
 using namespace icu;
 
+namespace logging = boost::log;
+
 
 
 const string example_rss_host = "lenta.ru";
@@ -48,6 +51,9 @@ const string example_rss_resource = "/rss";
 
 int main(int argc, char *argv[]) {
     ostringstream oss;
+
+    BOOST_LOG_TRIVIAL(debug) << "HELLO!";
+
     HttpClient client(example_rss_host);
     HttpResource *response = client.getResource(example_rss_resource);
     cout << "Code: " << response->code() << endl;

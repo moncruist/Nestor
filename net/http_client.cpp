@@ -47,7 +47,7 @@ HttpResource * HttpClient::getResource(const string &resource)
     string str = requestStr.str();
     sock_->write(requestStr.str());
 
-    result = new string(sock_->read());
+    result = new string(sock_->readAll());
 
     HttpResource *res = HttpResponseParser::parseRawData(*result);
     delete result;
