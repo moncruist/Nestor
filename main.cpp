@@ -1,9 +1,9 @@
 /*
  *  This file is part of Nestor.
  *
- *  Nestor - program for aggregation RSS subscriptions with access via
- *  IMAP interface.
- *  Copyright (C) 2013  Konstantin Zhukov
+ *  Nestor - program for aggregation RSS subscriptions providing
+ *  access via IMAP interface.
+ *  Copyright (C) 2013-2014  Konstantin Zhukov
  *
  *  Nestor is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
