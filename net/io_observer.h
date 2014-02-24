@@ -34,6 +34,12 @@ struct IOObserverCallbacks {
     std::function<void (void)> errorCallback;
 };
 
+
+/**
+ * IOObserver class is used for waiting events on specified descritptors.
+ * When event occurs, one of the callbacks (read, write or error callback) is
+ * called. Uses epoll for events monitoring.
+ */
 class IOObserver {
 public:
     IOObserver(unsigned int timeoutMs = 1000,
@@ -47,9 +53,13 @@ public:
 
     unsigned int timeout() const;
 
+
     void setTimeoutCallback(std::function<void(void)> callback);
 
-    void wait();
+    /**
+     * Blocks execution for waiting some events
+     */
+    int wait();
 
 private:
     std::function<void (void)> timeoutCallback_;

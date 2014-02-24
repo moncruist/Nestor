@@ -5,6 +5,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
 set(SRC_LIST main.cpp
+             logger.cpp
              utils/string.cpp
              utils/string.h
              net/http_client.cpp
@@ -26,13 +27,10 @@ set(SRC_LIST main.cpp
              rss/rss_xml_parser.cpp
              rss/rss_xml_parser.h)
 include_directories(${nestor_SOURCE_DIR})
-
-add_definitions(-DBOOST_LOG_DYN_LINK)
+include_directories(${nestor_SOURCE_DIR}/include)
 
 find_package(ICU REQUIRED)
-find_package(Boost 1.54 COMPONENTS log REQUIRED)
-find_package(Threads)
-include_directories(${Boost_INCLUDE_DIR})
+find_package(Log4cplus REQUIRED)
 
 if(NOT ICU_FOUND)
 	message(SEND_ERROR "Cannot find icu library")
@@ -49,6 +47,13 @@ else()
 	include_directories(${TINYXML2_INCLUDE_DIR})
 endif()
 
+find_package(Log4cplus REQUIRED)
+if(NOT LOG4CPLUS_FOUND)
+	message(SEND_ERROR "Cannot find Log4cplus library")
+	return()
+else()
+	include_directories(${LOG4CPLUS_INCLUDE_DIRS})
+endif()
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${PROJECT_NAME} ${ICU_LIBRARIES}
@@ -56,5 +61,4 @@ target_link_libraries(${PROJECT_NAME} ${ICU_LIBRARIES}
                                       ${ICU_IO_LIBRARIES}
                                       ${ICU_I18N_LIBRARIES}
                                       ${TINYXML2_LIBRARY}
-                                      ${Boost_LOG_LIBRARY}
-                                      ${CMAKE_THREAD_LIBS_INIT})
+                                      ${LOG4CPLUS_LIBRARIES})

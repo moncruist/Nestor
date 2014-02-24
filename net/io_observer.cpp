@@ -24,9 +24,13 @@
 #include <cstring>
 #include <unistd.h>
 #include <iostream>
+
+#include "logger.h"
 #include "io_observer.h"
 
 using namespace std;
+
+
 
 namespace nestor {
 namespace net {
@@ -108,13 +112,14 @@ void IOObserver::setTimeoutCallback(std::function<void(void)> callback) {
     timeoutCallback_ = callback;
 }
 
-void IOObserver::wait() {
+int IOObserver::wait() {
     int effectiveTimeout = timeoutMs_ > 0 ? timeoutMs_ : -1;
     epoll_event *evntbuf;
     int nfds;
 
-    if (items_.size() == 0)
-        return;
+    if (items_.size() == 0) {
+        return -1;
+    }
 
     evntbuf = new epoll_event[items_.size()];
     nfds = epoll_wait(efd_, evntbuf, items_.size(), effectiveTimeout);
@@ -123,13 +128,13 @@ void IOObserver::wait() {
         cout << "IOObserver::wait(): epoll_wait failed: " << strerror(errno)
                 << endl;
         delete[] evntbuf;
-        return;
+        return -1;
     }
 
     if (nfds == 0 && timeoutCallback_ != nullptr) {
         timeoutCallback_();
         delete[] evntbuf;
-        return;
+        return 0;
     }
 
     for (int i = 0; i < nfds; i++) {
@@ -154,6 +159,7 @@ void IOObserver::wait() {
     }
 
     delete[] evntbuf;
+    return nfds;
 }
 
 } /* namespace net */

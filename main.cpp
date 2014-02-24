@@ -31,7 +31,7 @@
 #include <unicode/ucnv.h>
 #include <unicode/utypes.h>
 
-#include <boost/log/trivial.hpp>
+#include "logger.h"
 
 #include "rss/rss_xml_parser.h"
 #include "rss/rss_channel.h"
@@ -42,8 +42,6 @@ using namespace nestor::net;
 using namespace nestor::rss;
 using namespace icu;
 
-namespace logging = boost::log;
-
 
 
 const string example_rss_host = "lenta.ru";
@@ -52,8 +50,10 @@ const string example_rss_resource = "/rss";
 int main(int argc, char *argv[]) {
     ostringstream oss;
 
-    BOOST_LOG_TRIVIAL(debug) << "HELLO!";
+    logger_init();
+    LOG("main", "HELLO!");
 
+    return 0;
     HttpClient client(example_rss_host);
     HttpResource *response = client.getResource(example_rss_resource);
     cout << "Code: " << response->code() << endl;
@@ -73,10 +73,10 @@ int main(int argc, char *argv[]) {
     }
 
     cout << "Items count " << channel->itemsCount() << endl;
-    for (unsigned int i = 0; i < channel->itemsCount(); i++) {
-        RssObject *item = channel->getItem(i);
-        cout << "Title: " << item->caption() << endl;
-        cout << "Text: " << item->text() << endl;
-        cout << "Link: " << item->link() << endl;
-    }
+//    for (unsigned int i = 0; i < channel->itemsCount(); i++) {
+//        RssObject *item = channel->getItem(i);
+//        cout << "Title: " << item->caption() << endl;
+//        cout << "Text: " << item->text() << endl;
+//        cout << "Link: " << item->link() << endl;
+//    }
 }
