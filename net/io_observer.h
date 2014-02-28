@@ -42,13 +42,14 @@ struct IOObserverCallbacks {
  */
 class IOObserver {
 public:
+    typedef std::function<void(void)> callbackFunction;
     IOObserver(unsigned int timeoutMs = 1000,
             std::function<void(void)> onTimeout = nullptr) throw (std::runtime_error);
     virtual ~IOObserver();
 
-    void append(int fd, std::function<void (void)> readCallback = nullptr,
-            std::function<void (void)> writeCallback = nullptr,
-            std::function<void (void)> errorCallback = nullptr);
+    void append(int fd, callbackFunction readCallback = nullptr,
+            callbackFunction writeCallback = nullptr,
+            callbackFunction errorCallback = nullptr);
     void remove(int fd);
 
     unsigned int timeout() const;

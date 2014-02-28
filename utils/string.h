@@ -28,6 +28,16 @@
 #include <cctype>
 #include <locale>
 
+#ifdef UNIX
+    #define CRLF "\r\n"
+#else
+    #ifdef WIN32
+        #define CRLF "\n"
+    #else
+        #define CRLF"\r\n"
+    #endif  //WIN32
+#endif // UNIX
+
 namespace nestor {
 namespace utils {
 

@@ -4,8 +4,7 @@ project(nestor)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
-set(SRC_LIST main.cpp
-             logger.cpp
+set(NESTOR_LIB_LIST logger.cpp
              utils/string.cpp
              utils/string.h
              net/http_client.cpp
@@ -25,7 +24,9 @@ set(SRC_LIST main.cpp
              rss/rss_channel.cpp
              rss/rss_channel.h
              rss/rss_xml_parser.cpp
-             rss/rss_xml_parser.h)
+             rss/rss_xml_parser.h
+             imap/imap_session.cpp
+             imap/imap_session.h)
 include_directories(${nestor_SOURCE_DIR})
 include_directories(${nestor_SOURCE_DIR}/include)
 
@@ -55,10 +56,28 @@ else()
 	include_directories(${LOG4CPLUS_INCLUDE_DIRS})
 endif()
 
-add_executable(${PROJECT_NAME} ${SRC_LIST})
-target_link_libraries(${PROJECT_NAME} ${ICU_LIBRARIES}
-                                      ${ICU_DATA_LIBRARIES}
-                                      ${ICU_IO_LIBRARIES}
-                                      ${ICU_I18N_LIBRARIES}
-                                      ${TINYXML2_LIBRARY}
-                                      ${LOG4CPLUS_LIBRARIES})
+set(NESTOR_LIB_LINKS  ${ICU_LIBRARIES}
+	                  ${ICU_DATA_LIBRARIES}
+	                  ${ICU_IO_LIBRARIES}
+	                  ${ICU_I18N_LIBRARIES}
+	                  ${TINYXML2_LIBRARY}
+	                  ${LOG4CPLUS_LIBRARIES})
+
+if(UNIX)
+	add_definitions(-DUNIX)
+else()
+	add_definitions(-DWIN32)
+endif(UNIX)
+
+
+
+add_library (nestorcom ${NESTOR_LIB_LIST})
+
+add_subdirectory(tests)
+
+add_executable(${PROJECT_NAME} main.cpp)
+target_link_libraries(${PROJECT_NAME} nestorcom
+                                      ${NESTOR_LIB_LINKS})
+
+enable_testing()                                      
+add_test (NAME "nestortests" COMMAND nestor_tests)

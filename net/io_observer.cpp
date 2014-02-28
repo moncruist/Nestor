@@ -54,9 +54,9 @@ IOObserver::~IOObserver() {
         close(efd_);
 }
 
-void IOObserver::append(int fd, std::function<void(void)> readCallback,
-        std::function<void(void)> writeCallback,
-        std::function<void(void)> errorCallback) {
+void IOObserver::append(int fd, callbackFunction readCallback,
+        callbackFunction writeCallback,
+        callbackFunction errorCallback) {
     epoll_event ev;
     bool mod;
     int res;
