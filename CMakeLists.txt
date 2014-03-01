@@ -26,7 +26,9 @@ set(NESTOR_LIB_LIST logger.cpp
              rss/rss_xml_parser.cpp
              rss/rss_xml_parser.h
              imap/imap_session.cpp
-             imap/imap_session.h)
+             imap/imap_session.h
+             imap/imap_parser.cpp
+             imap/imap_parser.h)
 include_directories(${nestor_SOURCE_DIR})
 include_directories(${nestor_SOURCE_DIR}/include)
 
