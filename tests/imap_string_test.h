@@ -1,5 +1,5 @@
-#ifndef IMAP_PARSER_TEST_H_
-#define IMAP_PARSER_TEST_H_
+#ifndef IMAP_STRING_TEST_H_
+#define IMAP_STRING_TEST_H_
 
 #include <iostream>
 #include <cppunit/TestCase.h>
@@ -13,8 +13,8 @@
 #include <cppunit/CompilerOutputter.h>
 #include <cppunit/XmlOutputter.h>
 
-class ImapParserTest : public CppUnit::TestFixture {
-    CPPUNIT_TEST_SUITE (ImapParserTest);
+class ImapStringTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE (ImapStringTest);
     CPPUNIT_TEST(testParsingImapString);
     CPPUNIT_TEST_SUITE_END();
 
@@ -26,4 +26,4 @@ protected:
     void testParsingImapString(void);
 };
 
-#endif /* IMAP_PARSER_TEST_H_ */
+#endif /* IMAP_STRING_TEST_H_ */

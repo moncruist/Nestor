@@ -54,10 +54,15 @@ public:
 
 private:
     std::string greetingString() const;
+    ImapCommand *parseCommand(std::string &rawData);
+
+private:
+    static std::string parseImapString(const std::string &rawData, int &lastIndex);
+    static std::string packImapString(const std::string &imapString);
 
 private:
     ImapSessionState state_;
-    std::queue<ImapCommand> commands_;
+    std::queue<ImapCommand *> commands_;
     bool ready_;
     std::mutex sessionLock_;
 };

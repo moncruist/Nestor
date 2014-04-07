@@ -29,7 +29,7 @@
 using namespace std;
 using namespace log4cplus;
 
-void logger_init() {
+void logger_init(void) {
     log4cplus::initialize();
 
     BasicConfigurator config;

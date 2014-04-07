@@ -11,13 +11,13 @@
 #include <cppunit/XmlOutputter.h>
 #include "logger.h"
 #include "imap_session_test.h"
-#include "imap_parser_test.h"
+#include "imap_string_test.h"
 
 using namespace std;
 
 
 CPPUNIT_TEST_SUITE_REGISTRATION( ImapSessionTest );
-CPPUNIT_TEST_SUITE_REGISTRATION( ImapParserTest );
+CPPUNIT_TEST_SUITE_REGISTRATION( ImapStringTest );
 
 int main(int argc, char* argv[])
 {

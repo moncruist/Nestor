@@ -18,10 +18,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see {http://www.gnu.org/licenses/}.
  */
+#include <vector>
 #include "imap_session.h"
 #include "utils/string.h"
 
 using namespace std;
+using namespace nestor::utils;
 
 namespace nestor {
 namespace imap {
@@ -31,7 +33,6 @@ ImapSession::ImapSession()
 }
 
 ImapSession::~ImapSession() {
-    // TODO Auto-generated destructor stub
 }
 
 void ImapSession::proccessData(const std::string& data) {
@@ -59,6 +60,15 @@ bool ImapSession::answersReady() {
 
 std::string ImapSession::greetingString() const {
     return "* OK IMAP4revl server ready" CRLF;
+}
+
+ImapCommand* ImapSession::parseCommand(std::string& rawData) {
+    vector<string> parts;
+    ImapCommand *result;
+    int partsCount = split(rawData, " ", parts);
+
+//    result = new ImapCommand();
+    return nullptr;
 }
 
 } /* namespace imap */
