@@ -37,6 +37,10 @@
 class ImapStringTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE (ImapStringTest);
     CPPUNIT_TEST(testParsingImapString);
+    CPPUNIT_TEST(testQuotedEmptyString);
+    CPPUNIT_TEST(testQuotedSimpleString);
+    CPPUNIT_TEST(testQuotedUncompletedString);
+    CPPUNIT_TEST(testLiteralNonsyncString);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -45,6 +49,10 @@ public:
 
 protected:
     void testParsingImapString(void);
+    void testQuotedEmptyString(void);
+    void testQuotedSimpleString(void);
+    void testQuotedUncompletedString(void);
+    void testLiteralNonsyncString(void);
 };
 
 #endif /* IMAP_STRING_TEST_H_ */

@@ -44,5 +44,69 @@ void ImapStringTest::testParsingImapString(void) {
 
     string result = imapString.data();
     CPPUNIT_ASSERT(idx == imapStringRaw.length() - 3);
+    CPPUNIT_ASSERT(imapString.type() == ImapStringType::LITERAL);
     CPPUNIT_ASSERT(result == "Hello World");
+    CPPUNIT_ASSERT(imapString.status() == ImapStringStatus::COMPLETED);
+}
+
+void ImapStringTest::testQuotedEmptyString(void) {
+	int idx;
+	string imapStringRaw = "";
+
+	ImapString imapString;
+	idx = imapString.addBufferToParse(imapStringRaw);
+
+	CPPUNIT_ASSERT(idx == -1);
+	CPPUNIT_ASSERT(imapString.type() == ImapStringType::UNSPECIFIED);
+	CPPUNIT_ASSERT(imapString.status() == ImapStringStatus::INVALID);
+}
+
+void ImapStringTest::testQuotedSimpleString(void) {
+	int idx;
+	string imapStringRaw = "\"quoted\"";
+
+	ImapString imapString;
+	idx = imapString.addBufferToParse(imapStringRaw);
+
+	string result = imapString.data();
+	CPPUNIT_ASSERT(idx == imapStringRaw.length() - 1);
+	CPPUNIT_ASSERT(imapString.type() == ImapStringType::QUOTED);
+	CPPUNIT_ASSERT(imapString.status() == ImapStringStatus::COMPLETED);
+	CPPUNIT_ASSERT(result == "quoted");
+}
+
+void ImapStringTest::testQuotedUncompletedString(void) {
+	int idx;
+	string imapStringRaw = "\"quoted";
+
+	ImapString imapString;
+	idx = imapString.addBufferToParse(imapStringRaw);
+
+
+	CPPUNIT_ASSERT(idx == imapStringRaw.length() - 1);
+	CPPUNIT_ASSERT(imapString.type() == ImapStringType::QUOTED);
+	CPPUNIT_ASSERT(imapString.status() == ImapStringStatus::UNCOMPLETED);
+
+	imapStringRaw = " finish\" aaa";
+	idx = imapString.addBufferToParse(imapStringRaw);
+
+	string result = imapString.data();
+	CPPUNIT_ASSERT(idx == 7);
+	CPPUNIT_ASSERT(imapString.type() == ImapStringType::QUOTED);
+	CPPUNIT_ASSERT(imapString.status() == ImapStringStatus::COMPLETED);
+	CPPUNIT_ASSERT(result == "quoted finish");
+}
+
+void ImapStringTest::testLiteralNonsyncString(void) {
+	string imapStringRaw = "{11+}" CRLF "Hello World!!!";
+	int idx = -1;
+
+	ImapString imapString;
+	idx = imapString.addBufferToParse(imapStringRaw);
+
+	string result = imapString.data();
+	CPPUNIT_ASSERT_EQUAL(static_cast<int>(imapStringRaw.length() - 3), idx);
+	CPPUNIT_ASSERT(imapString.type() == ImapStringType::LITERAL_NONSYNC);
+	CPPUNIT_ASSERT(result == "Hello World");
+	CPPUNIT_ASSERT(imapString.status() == ImapStringStatus::COMPLETED);
 }

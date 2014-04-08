@@ -72,6 +72,9 @@ ImapStringType ImapString::detectType(const std::string &buffer, int *pos, int *
     if (literalPos < quotePos) {
         // Try to parse literal prefix
         size_t literalEndPos = buffer.find('}', literalPos);
+        size_t nonsyncPos = buffer.find('+', literalPos);
+        int offset = 0;
+        ImapStringType resultType = ImapStringType::UNSPECIFIED;
 
         if (literalEndPos == string::npos || (literalEndPos - literalPos) == 1) {
             if (pos) *pos = -1;
@@ -79,7 +82,17 @@ ImapStringType ImapString::detectType(const std::string &buffer, int *pos, int *
             return ImapStringType::UNSPECIFIED;
         }
 
-        string length = buffer.substr(literalPos + 1, literalEndPos - literalPos - 1);
+        if (pos) *pos = literalEndPos;
+
+        if (nonsyncPos != string::npos && nonsyncPos < literalEndPos) {
+        	resultType = ImapStringType::LITERAL_NONSYNC;
+        	offset = 1;
+        } else {
+        	resultType = ImapStringType::LITERAL;
+        	offset = 0;
+        }
+
+        string length = buffer.substr(literalPos + 1, literalEndPos - literalPos - 1 - offset);
         char *tail;
         *stringLength = strtol(length.c_str(), &tail, 10);
         if (*tail != '\0') {
@@ -88,8 +101,7 @@ ImapStringType ImapString::detectType(const std::string &buffer, int *pos, int *
             return ImapStringType::UNSPECIFIED;
         }
 
-        if (pos) *pos = literalEndPos;
-        return ImapStringType::LITERAL;
+        return resultType;
     } else {
         // quoted string, return position of start quote
         if (pos) *pos = quotePos;
@@ -108,8 +120,10 @@ int ImapString::addBufferToParse(std::string &buffer) {
 
     if (type_ == ImapStringType::UNSPECIFIED) {
         type_ = detectType(buffer, &pos, &stringLength);
-        if (type_ == ImapStringType::UNSPECIFIED)
+        if (type_ == ImapStringType::UNSPECIFIED) {
+        	status_ = ImapStringStatus::INVALID;
             return -1;
+        }
         if (stringLength != -1)
             parsedLength_ = stringLength;
         length_ = 0;
