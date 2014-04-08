@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <exception>
+#include <stdexcept>
 #include <unicode/unistr.h>
 #include "rss_object.h"
 #include "rss_channel.h"
