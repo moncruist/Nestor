@@ -22,8 +22,10 @@
 #define IMAP_SESSION_H_
 
 #include <string>
+#include <map>
 #include <queue>
 #include <mutex>
+#include <functional>
 
 namespace nestor {
 namespace imap {
@@ -37,8 +39,8 @@ enum class ImapSessionState {
 };
 
 struct ImapCommand {
-    std::string uid;
-    std::string command;
+    std::string tag;
+    std::string name;
     std::string params;
 };
 
@@ -47,23 +49,35 @@ public:
     ImapSession();
     virtual ~ImapSession();
 
-    void proccessData(const std::string &data);
+    void processData(const std::string &data);
     std::string getAnswers();
 
     bool answersReady();
 
 private:
     std::string greetingString() const;
-    ImapCommand *parseCommand(std::string &rawData);
+    void rejectUnknownCommand(ImapCommand *command);
+    void switchState(ImapSessionState newState);
+
+    /* Command processing functions. Should meets CommandParserFunction
+     * signature. After successful work every function should write command
+     * answer to the answersData_. Each function shouldn't aquire mutex
+     * sessionLock_ because it's already locked.
+     * Input - ImapCommand structure with filled tag and name fields.
+     * Output - last meaningful symbol position of command in incomingData_
+     * or -1 if command is incomplete.  */
+    int processCapability(ImapCommand *command);
+    int processNoop(ImapCommand *command);
+
 
 private:
-    static std::string parseImapString(const std::string &rawData, int &lastIndex);
-    static std::string packImapString(const std::string &imapString);
+    typedef int (ImapSession::*CommandParserFunction)(ImapCommand *);
+    static const std::map<std::string, CommandParserFunction> parserFunctions;
 
-private:
     ImapSessionState state_;
-    std::queue<ImapCommand *> commands_;
-    bool ready_;
+    std::string incomingData_;
+    std::string answersData_;
+    std::queue<ImapCommand *> completedCommands_;
     std::mutex sessionLock_;
 };
 

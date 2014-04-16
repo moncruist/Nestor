@@ -34,14 +34,14 @@ namespace utils {
 int split(const string &str, const string &sep, vector<string> &array) {
     vector<string> result;
     char *cstr = const_cast<char *>(str.c_str());
-    char *current;
+    char *current, *savePtr;
     int count = 0;
 
-    current = strtok(cstr, sep.c_str());
+    current = strtok_r(cstr, sep.c_str(), &savePtr);
     while(current != nullptr) {
         array.push_back(current);
         count++;
-        current = strtok(nullptr, sep.c_str());
+        current = strtok_r(nullptr, sep.c_str(), &savePtr);
     }
     return count;
 }

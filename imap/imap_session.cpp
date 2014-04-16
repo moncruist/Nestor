@@ -19,6 +19,7 @@
  *  along with this program.  If not, see {http://www.gnu.org/licenses/}.
  */
 #include <vector>
+#include <sstream>
 #include "imap_session.h"
 #include "utils/string.h"
 
@@ -28,47 +29,181 @@ using namespace nestor::utils;
 namespace nestor {
 namespace imap {
 
-ImapSession::ImapSession()
-        : state_(ImapSessionState::CONNECTED), ready_(true) {
+/*
+ * Map of parsing methods. Command - parsing method.
+ */
+const std::map<std::string, ImapSession::CommandParserFunction>
+ImapSession::parserFunctions = {
+        {"CAPABILITY", &ImapSession::processCapability},
+        {"NOOP", &ImapSession::processNoop},
+};
+
+/**
+ * Retrieves tag from command line
+ * @param data command data to parse
+ * @return return tag or nullptr in case of error.
+ */
+static string* getCommandTag(const string &data) {
+    if (data.length() == 0 || !isalnum(data[0]))
+        return nullptr;
+    size_t spacePos = data.find(' ', 0);
+    if (spacePos == string::npos)
+        return nullptr;
+    string *result = new string();
+    result->assign(data.begin(), data.begin() + spacePos);
+    return result;
+}
+
+
+/**
+ * Retrieves command name from command line
+ * @param data command data to parse
+ * @return return command name or nullptr in case of error.
+ */
+static string* getCommandName(const string &data) {
+    if (data.length() == 0)
+            return nullptr;
+
+    vector<string> parts;
+    split(data, " ", parts);
+
+    if (parts.size() < 2)
+        return nullptr;
+
+    string *result = new string(parts[1]);
+    return result;
+}
+
+ImapSession::ImapSession() {
+    switchState(ImapSessionState::CONNECTED);
 }
 
 ImapSession::~ImapSession() {
 }
 
-void ImapSession::proccessData(const std::string& data) {
+void ImapSession::processData(const std::string& data) {
+    lock_guard<mutex> lock(sessionLock_);
+    incomingData_.append(data);
 
+    bool flag = true;
+    while(flag) {
+        size_t crlfPos = incomingData_.find(CRLF);
+
+        // Checking for valid line
+        if (crlfPos == string::npos)
+            break;
+
+        /* Getting line and parse her. Here we only do rough parsing,
+         * detailed parsing goes in process<command> methods.*/
+        string line = incomingData_.substr(0, crlfPos);
+        string *tag, *commandName;
+
+
+        tag = getCommandTag(line);
+        commandName = getCommandName(line);
+
+        if (!tag || !commandName) {
+            incomingData_.erase(0, crlfPos + 2); // deleting wrong line from buffer
+            if (tag) delete tag;
+            if (commandName) delete commandName;
+            continue;
+        }
+
+        ImapCommand *command = new ImapCommand();
+        command->tag = *tag;
+        command->name = *commandName;
+
+        stringToUpper(command->name);
+
+        int commandEnd;
+
+        if (parserFunctions.count(command->name)) {
+            CommandParserFunction func =  parserFunctions.at(command->name);
+            commandEnd = (this->*func)(command);
+            if (commandEnd >= 0) {
+                incomingData_.erase(0, commandEnd + 1);
+            } else {
+                /* Incomplete command. break */
+                flag = false;
+            }
+        } else {
+            rejectUnknownCommand(command);
+            incomingData_.erase(0, crlfPos + 2); // deleting wrong line from buffer
+        }
+
+        if (tag) delete tag;
+        if (commandName) delete commandName;
+    }
 }
 
 std::string ImapSession::getAnswers() {
     lock_guard<mutex> lock(sessionLock_);
 
-    switch(state_) {
-    case ImapSessionState::CONNECTED:
-        state_ = ImapSessionState::NON_AUTH;
-        return greetingString();
-        break;
-    default:
-        break;
-    }
-
-    return "";
+    return answersData_;
 }
 
 bool ImapSession::answersReady() {
-    return ready_;
+    return answersData_.length() > 0;
 }
 
 std::string ImapSession::greetingString() const {
     return "* OK IMAP4revl server ready" CRLF;
 }
 
-ImapCommand* ImapSession::parseCommand(std::string& rawData) {
-    vector<string> parts;
-    ImapCommand *result;
-    int partsCount = split(rawData, " ", parts);
 
-//    result = new ImapCommand();
-    return nullptr;
+/* CAPABILITY command */
+int ImapSession::processCapability(ImapCommand* command) {
+    size_t crlfPos = incomingData_.find(CRLF);
+    string line = incomingData_.substr(0, crlfPos);
+
+    /* Check command syntax */
+    if (line.length() != command->tag.length() + 1 /* whitespace */ + command->name.length()) {
+        rejectUnknownCommand(command);
+        return crlfPos + 1; /* last position in command */
+    }
+
+    ostringstream oss;
+    oss << "* CAPABILITY IMAP 4.1 AUTH=PLAIN" << CRLF << command->tag << " OK CAPABILITY completed" << CRLF;
+    answersData_.append(oss.str());
+    return crlfPos + 1;
+}
+
+
+/* NOOP command */
+int ImapSession::processNoop(ImapCommand* command) {
+    size_t crlfPos = incomingData_.find(CRLF);
+    string line = incomingData_.substr(0, crlfPos);
+
+    /* Check command syntax */
+    if (line.length() != command->tag.length() + 1 /* whitespace */ + command->name.length()) {
+        rejectUnknownCommand(command);
+        return crlfPos + 1; /* last position in command */
+    }
+
+    ostringstream oss;
+    oss << command->tag << " OK NOOP completed" << CRLF;
+    answersData_.append(oss.str());
+    return crlfPos + 1;
+}
+
+void ImapSession::rejectUnknownCommand(ImapCommand* command) {
+    ostringstream oss;
+    oss << command->tag << " BAD Unknown command \"" << command->name << "\"" << CRLF;
+    answersData_.append(oss.str());
+}
+
+/**
+ * Switches the state of session
+ * @param newState
+ */
+void ImapSession::switchState(ImapSessionState newState) {
+    if (newState == state_)
+        return; // Same state, nothing to do.
+
+    if (newState == ImapSessionState::CONNECTED)
+        answersData_.append(greetingString());
+
+    state_ = newState;
 }
 
 } /* namespace imap */
