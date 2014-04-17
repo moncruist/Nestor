@@ -27,6 +27,8 @@
 #include <mutex>
 #include <functional>
 
+#include "service/service.h"
+
 namespace nestor {
 namespace imap {
 
@@ -46,13 +48,14 @@ struct ImapCommand {
 
 class ImapSession {
 public:
-    ImapSession();
+    ImapSession(service::Service &service);
     virtual ~ImapSession();
 
     void processData(const std::string &data);
     std::string getAnswers();
 
     bool answersReady();
+
 
 private:
     std::string greetingString() const;
@@ -68,6 +71,7 @@ private:
      * or -1 if command is incomplete.  */
     int processCapability(ImapCommand *command);
     int processNoop(ImapCommand *command);
+    int processLogout(ImapCommand *command);
 
 
 private:
@@ -79,6 +83,8 @@ private:
     std::string answersData_;
     std::queue<ImapCommand *> completedCommands_;
     std::mutex sessionLock_;
+
+    service::Service &service_;
 };
 
 } /* namespace imap */

@@ -28,7 +28,9 @@ set(NESTOR_LIB_LIST logger.cpp
              imap/imap_session.cpp
              imap/imap_session.h
              imap/imap_string.cpp
-             imap/imap_string.h)
+             imap/imap_string.h
+             service/service.cpp
+             service/service.h)
 include_directories(${nestor_SOURCE_DIR})
 include_directories(${nestor_SOURCE_DIR}/include)
 

@@ -24,17 +24,57 @@
 #include "utils/string.h"
 #include <string>
 
+using namespace std;
+using namespace nestor::imap;
+using namespace nestor::service;
 
 void ImapSessionTest::setUp(void) {
+    context = new ImapSession(service);
+    context->getAnswers();
 }
 
 void ImapSessionTest::tearDown(void) {
+    delete context;
 }
 
 void ImapSessionTest::testGreeting(void) {
-    nestor::imap::ImapSession session;
+    Service service;
+    nestor::imap::ImapSession session(service);
 
     CPPUNIT_ASSERT(session.answersReady() == true);
     std::string answer = session.getAnswers();
     CPPUNIT_ASSERT(answer == "* OK IMAP4revl server ready" CRLF);
+}
+
+void ImapSessionTest::testCapabilityCommand(void) {
+    string commandStr, expectedAnswer, actualAnswer;
+    commandStr = "abcd1 CAPABILITY" CRLF;
+    expectedAnswer = "* CAPABILITY IMAP4rev1 LITERAL+ AUTH=PLAIN" CRLF "abcd1 OK CAPABILITY completed" CRLF;
+
+    context->processData(commandStr);
+    CPPUNIT_ASSERT(context->answersReady());
+    actualAnswer = context->getAnswers();
+    CPPUNIT_ASSERT_EQUAL(expectedAnswer, actualAnswer);
+}
+
+void ImapSessionTest::testNoopCommand(void) {
+    string commandStr, expectedAnswer, actualAnswer;
+    commandStr = "abcd2 NOOP" CRLF;
+    expectedAnswer = "abcd2 OK NOOP completed" CRLF;
+
+    context->processData(commandStr);
+    CPPUNIT_ASSERT(context->answersReady());
+    actualAnswer = context->getAnswers();
+    CPPUNIT_ASSERT_EQUAL(expectedAnswer, actualAnswer);
+}
+
+void ImapSessionTest::testLogoutCommand(void) {
+    string commandStr, expectedAnswer, actualAnswer;
+    commandStr = "abcd3 LOGOUT" CRLF;
+    expectedAnswer = "* BYE IMAP4rev1 Server logging out" CRLF "abcd3 OK LOGOUT completed" CRLF;
+
+    context->processData(commandStr);
+    CPPUNIT_ASSERT(context->answersReady());
+    actualAnswer = context->getAnswers();
+    CPPUNIT_ASSERT_EQUAL(expectedAnswer, actualAnswer);
 }

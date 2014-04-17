@@ -33,10 +33,15 @@
 #include <cppunit/TestRunner.h>
 #include <cppunit/CompilerOutputter.h>
 #include <cppunit/XmlOutputter.h>
+#include "service/service.h"
+#include "imap/imap_session.h"
 
 class ImapSessionTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE (ImapSessionTest);
     CPPUNIT_TEST(testGreeting);
+    CPPUNIT_TEST(testCapabilityCommand);
+    CPPUNIT_TEST(testNoopCommand);
+    CPPUNIT_TEST(testLogoutCommand);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -45,6 +50,13 @@ public:
 
 protected:
     void testGreeting(void);
+    void testCapabilityCommand(void);
+    void testNoopCommand(void);
+    void testLogoutCommand(void);
+
+private:
+    nestor::imap::ImapSession *context;
+    nestor::service::Service service;
 };
 
 #endif /* IMAP_SESSION_TEST_H_ */

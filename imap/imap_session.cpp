@@ -25,6 +25,7 @@
 
 using namespace std;
 using namespace nestor::utils;
+using namespace nestor::service;
 
 namespace nestor {
 namespace imap {
@@ -36,6 +37,7 @@ const std::map<std::string, ImapSession::CommandParserFunction>
 ImapSession::parserFunctions = {
         {"CAPABILITY", &ImapSession::processCapability},
         {"NOOP", &ImapSession::processNoop},
+        {"LOGOUT", &ImapSession::processLogout},
 };
 
 /**
@@ -74,7 +76,8 @@ static string* getCommandName(const string &data) {
     return result;
 }
 
-ImapSession::ImapSession() {
+ImapSession::ImapSession(Service &service)
+        : service_(service) {
     switchState(ImapSessionState::CONNECTED);
 }
 
@@ -138,8 +141,9 @@ void ImapSession::processData(const std::string& data) {
 
 std::string ImapSession::getAnswers() {
     lock_guard<mutex> lock(sessionLock_);
-
-    return answersData_;
+    string copy = answersData_;
+    answersData_.clear();
+    return copy;
 }
 
 bool ImapSession::answersReady() {
@@ -163,7 +167,7 @@ int ImapSession::processCapability(ImapCommand* command) {
     }
 
     ostringstream oss;
-    oss << "* CAPABILITY IMAP 4.1 AUTH=PLAIN" << CRLF << command->tag << " OK CAPABILITY completed" << CRLF;
+    oss << "* CAPABILITY IMAP4rev1 LITERAL+ AUTH=PLAIN" << CRLF << command->tag << " OK CAPABILITY completed" << CRLF;
     answersData_.append(oss.str());
     return crlfPos + 1;
 }
@@ -175,13 +179,36 @@ int ImapSession::processNoop(ImapCommand* command) {
     string line = incomingData_.substr(0, crlfPos);
 
     /* Check command syntax */
-    if (line.length() != command->tag.length() + 1 /* whitespace */ + command->name.length()) {
+    if (line.length() != command->tag.length() + 1 /* whitespace */ +
+            command->name.length()) {
         rejectUnknownCommand(command);
         return crlfPos + 1; /* last position in command */
     }
 
     ostringstream oss;
-    oss << command->tag << " OK NOOP completed" << CRLF;
+    oss << command->tag << " OK " << command->name << " completed" << CRLF;
+    answersData_.append(oss.str());
+    return crlfPos + 1;
+}
+
+
+/* LOGOUT command */
+int ImapSession::processLogout(ImapCommand *command) {
+    size_t crlfPos = incomingData_.find(CRLF);
+    string line = incomingData_.substr(0, crlfPos);
+
+    /* Check command syntax */
+    if (line.length() != command->tag.length() + 1 /* whitespace */ +
+            command->name.length()) {
+        rejectUnknownCommand(command);
+        return crlfPos + 1; /* last position in command */
+    }
+
+    service_.onLogout();
+
+    ostringstream oss;
+    oss << "* BYE IMAP4rev1 Server logging out" << CRLF << command->tag
+            << " OK " << command->name << " completed" << CRLF;
     answersData_.append(oss.str());
     return crlfPos + 1;
 }
