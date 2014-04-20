@@ -40,6 +40,8 @@ ImapSession::parserFunctions = {
         {"CAPABILITY", &ImapSession::processCapability},
         {"NOOP", &ImapSession::processNoop},
         {"LOGOUT", &ImapSession::processLogout},
+        {"AUTHENTICATE", &ImapSession::processAuthenticate},
+        {"LOGIN", &ImapSession::processLogin}
 };
 
 /**
@@ -169,16 +171,18 @@ int ImapSession::processCapability(ImapCommand* command) {
     size_t crlfPos = incomingData_.find(CRLF);
     string line = incomingData_.substr(0, crlfPos);
 
+    int ret = crlfPos + 1; /* last position in command */
+
     /* Check command syntax */
     if (line.length() != command->tag.length() + 1 /* whitespace */ + command->name.length()) {
         rejectUnknownCommand(command);
-        return crlfPos + 1; /* last position in command */
+        return ret;
     }
 
     ostringstream oss;
     oss << "* CAPABILITY IMAP4rev1 LITERAL+ AUTH=PLAIN" << CRLF << command->tag << " OK CAPABILITY completed" << CRLF;
     answersData_.append(oss.str());
-    return crlfPos + 1;
+    return ret;
 }
 
 
@@ -187,17 +191,19 @@ int ImapSession::processNoop(ImapCommand* command) {
     size_t crlfPos = incomingData_.find(CRLF);
     string line = incomingData_.substr(0, crlfPos);
 
+    int ret = crlfPos + 1; /* last position in command */
+
     /* Check command syntax */
     if (line.length() != command->tag.length() + 1 /* whitespace */ +
             command->name.length()) {
         rejectUnknownCommand(command);
-        return crlfPos + 1; /* last position in command */
+        return ret;
     }
 
     ostringstream oss;
     oss << command->tag << " OK " << command->name << " completed" << CRLF;
     answersData_.append(oss.str());
-    return crlfPos + 1;
+    return ret;
 }
 
 
@@ -206,11 +212,13 @@ int ImapSession::processLogout(ImapCommand *command) {
     size_t crlfPos = incomingData_.find(CRLF);
     string line = incomingData_.substr(0, crlfPos);
 
+    int ret = crlfPos + 1; /* last position in command */
+
     /* Check command syntax */
     if (line.length() != command->tag.length() + 1 /* whitespace */ +
             command->name.length()) {
         rejectUnknownCommand(command);
-        return crlfPos + 1; /* last position in command */
+        return ret;
     }
 
     service_->onLogout();
@@ -219,12 +227,91 @@ int ImapSession::processLogout(ImapCommand *command) {
     oss << "* BYE IMAP4rev1 Server logging out" << CRLF << command->tag
             << " OK " << command->name << " completed" << CRLF;
     answersData_.append(oss.str());
-    return crlfPos + 1;
+    return ret;
+}
+
+
+/* AUTHENTICATE command */
+int ImapSession::processAuthenticate(ImapCommand *command) {
+    size_t crlfPos = incomingData_.find(CRLF);
+    string line = incomingData_.substr(0, crlfPos);
+    vector<string> commandParts;
+    split(line, " ", commandParts);
+    ostringstream oss; // for formatting
+
+    int ret = crlfPos + 1;
+
+    if (state_ != ImapSessionState::NON_AUTH) {
+        rejectNo(command, "Wrong state");
+        return ret;
+    }
+
+    if (commandParts.size() != 3) {
+        oss << command->name << " Wrong arguments";
+        rejectBad(command, oss.str());
+        return ret;
+    }
+
+    /* We don't support any authentication mechanism yet */
+    oss << "Unsupported authentication " << commandParts[2];
+    rejectNo(command, oss.str());
+    return ret;
+}
+
+
+/* LOGIN command */
+int ImapSession::processLogin(ImapCommand *command) {
+    size_t crlfPos = incomingData_.find(CRLF);
+    string line = incomingData_.substr(0, crlfPos);
+    vector<string> commandParts;
+    split(line, " ", commandParts);
+    ostringstream oss; // for formatting
+
+    int ret = crlfPos + 1;
+
+    if (state_ != ImapSessionState::NON_AUTH) {
+        rejectNo(command, "Wrong state");
+        return ret;
+    }
+
+    if (commandParts.size() != 4) {
+        oss << command->name << " Wrong arguments";
+        rejectBad(command, oss.str());
+        return ret;
+    }
+
+    string username = commandParts[2];
+    string password = commandParts[3];
+
+    if (service_->authenticate(username, password)) {
+        switchState(ImapSessionState::AUTH);
+        oss << command->tag << " OK " << command->name << " completed" << CRLF;
+        answersData_.append(oss.str());
+
+        LOG_LVL("ImapSession", INFO, "User " << username << " successfully logged in");
+    } else {
+        rejectNo(command, "Invalid user name or password");
+    }
+
+    return ret;
+
 }
 
 void ImapSession::rejectUnknownCommand(ImapCommand* command) {
     ostringstream oss;
-    oss << command->tag << " BAD Unknown command \"" << command->name << "\"" << CRLF;
+    oss << "Unknown command \"" << command->name << "\"";
+    rejectBad(command, oss.str());
+}
+
+void ImapSession::rejectBad(ImapCommand *command, const std::string &comment) {
+    ostringstream oss;
+    oss << command->tag << " BAD " << comment << CRLF;
+    answersData_.append(oss.str());
+}
+
+void ImapSession::rejectNo(ImapCommand *command, const std::string &comment) {
+    ostringstream oss;
+    oss << command->tag << " NO " << command->name << " " << comment << CRLF;
     answersData_.append(oss.str());
 }
 
@@ -236,10 +323,12 @@ void ImapSession::switchState(ImapSessionState newState) {
     if (newState == state_)
         return; // Same state, nothing to do.
 
-    if (newState == ImapSessionState::CONNECTED)
+    if (newState == ImapSessionState::CONNECTED) {
         answersData_.append(greetingString());
-
-    state_ = newState;
+        state_ = ImapSessionState::NON_AUTH;
+    } else {
+        state_ = newState;
+    }
     writeAnswers();
 }
 

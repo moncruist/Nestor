@@ -67,6 +67,8 @@ public:
 private:
     std::string greetingString() const;
     void rejectUnknownCommand(ImapCommand *command);
+    void rejectBad(ImapCommand *command, const std::string &comment);
+    void rejectNo(ImapCommand *command, const std::string &comment);
     void switchState(ImapSessionState newState);
     void writeAnswers();
 
@@ -80,6 +82,8 @@ private:
     int processCapability(ImapCommand *command);
     int processNoop(ImapCommand *command);
     int processLogout(ImapCommand *command);
+    int processAuthenticate(ImapCommand *command);
+    int processLogin(ImapCommand *command);
 
 
 
