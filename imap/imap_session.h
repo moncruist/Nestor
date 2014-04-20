@@ -27,6 +27,7 @@
 #include <mutex>
 #include <functional>
 
+#include "net/socket_single.h"
 #include "service/service.h"
 
 namespace nestor {
@@ -48,19 +49,26 @@ struct ImapCommand {
 
 class ImapSession {
 public:
-    ImapSession(service::Service &service);
+
+    /**
+     * ImapSession constructor. Requires valid service and socket objects for
+     * work. Takes ownership of this objects.
+     * @param service Pointer to the service object for getting data for response
+     * @param socket Pointer to the socket, which is used as transport layer.
+     */
+    ImapSession(service::Service *service, net::SocketSingle *socket);
     virtual ~ImapSession();
 
-    void processData(const std::string &data);
-    std::string getAnswers();
+    void processData();
 
-    bool answersReady();
-
+    const net::SocketSingle *socket() const;
+    const service::Service *service() const;
 
 private:
     std::string greetingString() const;
     void rejectUnknownCommand(ImapCommand *command);
     void switchState(ImapSessionState newState);
+    void writeAnswers();
 
     /* Command processing functions. Should meets CommandParserFunction
      * signature. After successful work every function should write command
@@ -74,6 +82,7 @@ private:
     int processLogout(ImapCommand *command);
 
 
+
 private:
     typedef int (ImapSession::*CommandParserFunction)(ImapCommand *);
     static const std::map<std::string, CommandParserFunction> parserFunctions;
@@ -84,7 +93,8 @@ private:
     std::queue<ImapCommand *> completedCommands_;
     std::mutex sessionLock_;
 
-    service::Service &service_;
+    service::Service *service_;
+    net::SocketSingle *socket_;
 };
 
 } /* namespace imap */

@@ -22,15 +22,73 @@
 #include "imap/imap_session.h"
 #include "imap_session_test.h"
 #include "utils/string.h"
+#include "net/socket_single.h"
 #include <string>
 
 using namespace std;
 using namespace nestor::imap;
 using namespace nestor::service;
+using namespace nestor::net;
+
+class DummySocket : public SocketSingle {
+public:
+    string writebuf;
+    string readbuf;
+
+public:
+
+    void clearBufs() {
+        writebuf.clear();
+        readbuf.clear();
+    }
+
+    DummySocket() : SocketSingle("", 0, true) {}
+    virtual ~DummySocket() { clearBufs(); }
+    void connect() override {
+        clearBufs();
+    }
+    void close() override {
+        clearBufs();
+    }
+
+    void write(const char *buf, size_t buflen) override {
+        string st(buf, buflen);
+        write(st);
+    }
+
+    void write(const std::string &str) override {
+        writebuf.append(str);
+    }
+
+    size_t read(char *buf, size_t buflen) override {
+        size_t len = buflen > readbuf.size() ? readbuf.size() : buflen;
+        copy(readbuf.begin(), readbuf.begin() + len, buf);
+        readbuf.erase(readbuf.begin(), readbuf.begin() + len);
+        return len;
+    }
+
+    std::string readAll() override {
+        string cp = readbuf;
+        readbuf.clear();
+        return cp;
+    }
+
+    bool connected() const override {
+        return true;
+    }
+
+    int descriptor() const override {
+        return 0;
+    }
+
+
+};
 
 void ImapSessionTest::setUp(void) {
-    context = new ImapSession(service);
-    context->getAnswers();
+    sock = new DummySocket();
+    service = new Service();
+    context = new ImapSession(service, sock);
+    sock->clearBufs();
 }
 
 void ImapSessionTest::tearDown(void) {
@@ -38,11 +96,11 @@ void ImapSessionTest::tearDown(void) {
 }
 
 void ImapSessionTest::testGreeting(void) {
-    Service service;
-    nestor::imap::ImapSession session(service);
+    Service *service = new Service();
+    DummySocket *sock = new DummySocket();
+    nestor::imap::ImapSession session(service, sock);
 
-    CPPUNIT_ASSERT(session.answersReady() == true);
-    std::string answer = session.getAnswers();
+    std::string answer = sock->writebuf;
     CPPUNIT_ASSERT(answer == "* OK IMAP4revl server ready" CRLF);
 }
 
@@ -51,10 +109,12 @@ void ImapSessionTest::testCapabilityCommand(void) {
     commandStr = "abcd1 CAPABILITY" CRLF;
     expectedAnswer = "* CAPABILITY IMAP4rev1 LITERAL+ AUTH=PLAIN" CRLF "abcd1 OK CAPABILITY completed" CRLF;
 
-    context->processData(commandStr);
-    CPPUNIT_ASSERT(context->answersReady());
-    actualAnswer = context->getAnswers();
+    sock->readbuf.append(commandStr);
+
+    context->processData();
+    actualAnswer = sock->writebuf;
     CPPUNIT_ASSERT_EQUAL(expectedAnswer, actualAnswer);
+    sock->clearBufs();
 }
 
 void ImapSessionTest::testNoopCommand(void) {
@@ -62,10 +122,12 @@ void ImapSessionTest::testNoopCommand(void) {
     commandStr = "abcd2 NOOP" CRLF;
     expectedAnswer = "abcd2 OK NOOP completed" CRLF;
 
-    context->processData(commandStr);
-    CPPUNIT_ASSERT(context->answersReady());
-    actualAnswer = context->getAnswers();
+    sock->readbuf.append(commandStr);
+
+    context->processData();
+    actualAnswer = sock->writebuf;
     CPPUNIT_ASSERT_EQUAL(expectedAnswer, actualAnswer);
+    sock->clearBufs();
 }
 
 void ImapSessionTest::testLogoutCommand(void) {
@@ -73,8 +135,10 @@ void ImapSessionTest::testLogoutCommand(void) {
     commandStr = "abcd3 LOGOUT" CRLF;
     expectedAnswer = "* BYE IMAP4rev1 Server logging out" CRLF "abcd3 OK LOGOUT completed" CRLF;
 
-    context->processData(commandStr);
-    CPPUNIT_ASSERT(context->answersReady());
-    actualAnswer = context->getAnswers();
+    sock->readbuf.append(commandStr);
+
+    context->processData();
+    actualAnswer = sock->writebuf;
     CPPUNIT_ASSERT_EQUAL(expectedAnswer, actualAnswer);
+    sock->clearBufs();
 }

@@ -45,7 +45,6 @@ enum SocketSelectResult {
 
 SocketSingle::SocketSingle(string host, unsigned short port, bool manualConnect,
         unsigned int timeoutMs, bool nonblocking)
-                throw (SocketTimeoutException, SocketIOException)
         : host_(host), port_(port), sockFd_(-1), manualConnect_(manualConnect), connected_(
                 false), timeoutMs_(timeoutMs), nonblocking_(nonblocking) {
     try {
@@ -70,7 +69,7 @@ SocketSingle::SocketSingle(int fd, unsigned int timeoutMs, bool nonblocking)
 }
 
 
-void SocketSingle::connect() throw (SocketTimeoutException, SocketIOException) {
+void SocketSingle::connect() {
     addrinfo hints, *servinfo;
     int res;
     ostringstream oss_err;
@@ -162,8 +161,7 @@ SocketSingle::~SocketSingle() {
     close();
 }
 
-void SocketSingle::write(const char* buf, size_t buflen)
-        throw (SocketTimeoutException, SocketIOException) {
+void SocketSingle::write(const char* buf, size_t buflen) {
     size_t sended = 0;
     int res;
     ostringstream oss_err;
@@ -193,13 +191,11 @@ void SocketSingle::write(const char* buf, size_t buflen)
     }
 }
 
-void SocketSingle::write(const std::string& str) throw (SocketTimeoutException,
-        SocketIOException) {
+void SocketSingle::write(const std::string& str) {
     write(str.c_str(), str.length());
 }
 
-size_t SocketSingle::read(char* buf, size_t buflen)
-        throw (SocketTimeoutException, SocketIOException) {
+size_t SocketSingle::read(char* buf, size_t buflen) {
     ostringstream oss_err;
     size_t readed = 0;
     int res = 0;
@@ -233,8 +229,7 @@ size_t SocketSingle::read(char* buf, size_t buflen)
     return readed;
 }
 
-std::string SocketSingle::readAll() throw (SocketTimeoutException,
-        SocketIOException) {
+std::string SocketSingle::readAll() {
     char buf[1024];
     int readed;
     string result = "";
@@ -244,7 +239,7 @@ std::string SocketSingle::readAll() throw (SocketTimeoutException,
     return result;
 }
 
-void SocketSingle::setNonBlocking(bool nonblocking) throw (SocketIOException) {
+void SocketSingle::setNonBlocking(bool nonblocking) {
     ostringstream oss_err;
     nonblocking_ = nonblocking;
 

@@ -20,12 +20,14 @@
  */
 #include <vector>
 #include <sstream>
+#include "logger.h"
 #include "imap_session.h"
 #include "utils/string.h"
 
 using namespace std;
 using namespace nestor::utils;
 using namespace nestor::service;
+using namespace nestor::net;
 
 namespace nestor {
 namespace imap {
@@ -76,16 +78,32 @@ static string* getCommandName(const string &data) {
     return result;
 }
 
-ImapSession::ImapSession(Service &service)
-        : service_(service) {
+ImapSession::ImapSession(service::Service *service, net::SocketSingle *socket)
+        : service_(service), socket_(socket) {
+    if (service_ == nullptr)
+        throw invalid_argument("ImapSession::ImapSession: service is nullptr");
+    if (socket_ == nullptr)
+        throw invalid_argument("ImapSession::ImapSession: socket is nullptr");
     switchState(ImapSessionState::CONNECTED);
 }
 
 ImapSession::~ImapSession() {
+    if (service_) delete service_;
+    if (socket_) delete socket_;
 }
 
-void ImapSession::processData(const std::string& data) {
+const net::SocketSingle* ImapSession::socket() const {
+    return socket_;
+}
+
+const service::Service* ImapSession::service() const {
+    return service_;
+}
+
+void ImapSession::processData() {
     lock_guard<mutex> lock(sessionLock_);
+
+    string data = socket_->readAll();
     incomingData_.append(data);
 
     bool flag = true;
@@ -134,20 +152,11 @@ void ImapSession::processData(const std::string& data) {
             incomingData_.erase(0, crlfPos + 2); // deleting wrong line from buffer
         }
 
+        writeAnswers();
+
         if (tag) delete tag;
         if (commandName) delete commandName;
     }
-}
-
-std::string ImapSession::getAnswers() {
-    lock_guard<mutex> lock(sessionLock_);
-    string copy = answersData_;
-    answersData_.clear();
-    return copy;
-}
-
-bool ImapSession::answersReady() {
-    return answersData_.length() > 0;
 }
 
 std::string ImapSession::greetingString() const {
@@ -204,7 +213,7 @@ int ImapSession::processLogout(ImapCommand *command) {
         return crlfPos + 1; /* last position in command */
     }
 
-    service_.onLogout();
+    service_->onLogout();
 
     ostringstream oss;
     oss << "* BYE IMAP4rev1 Server logging out" << CRLF << command->tag
@@ -231,7 +240,24 @@ void ImapSession::switchState(ImapSessionState newState) {
         answersData_.append(greetingString());
 
     state_ = newState;
+    writeAnswers();
 }
+
+void ImapSession::writeAnswers() {
+    if (answersData_.length() > 0) {
+        try {
+            socket_->write(answersData_);
+        } catch (SocketIOException &e) {
+            LOG_LVL("ImapSession", WARN,
+                    "Cannot write to the socket" << socket_->descriptor() << ": " << e.what());
+        } catch (SocketTimeoutException &e) {
+            LOG_LVL("ImapSession", WARN,
+                    "Timeout socket " << socket_->descriptor() << "; " << e.what());
+        }
+        answersData_.clear();
+    }
+}
+
 
 } /* namespace imap */
 } /* namespace nestor */

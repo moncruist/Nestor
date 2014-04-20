@@ -40,26 +40,20 @@ class SocketSingle {
 public:
     SocketSingle(std::string host = "localhost", unsigned short port = 80,
             bool manualConnect = false, unsigned int timeoutMs = 1000,
-            bool nonblocking = true) throw (SocketTimeoutException,
-                    SocketIOException);
+            bool nonblocking = true);
 
     SocketSingle(int fd, unsigned int timeoutMs = 1000,
             bool nonblocking = true);
 
-    virtual void connect()
-            throw (SocketTimeoutException, SocketIOException);
+    virtual void connect();
     virtual void close();
 
-    virtual void write(const char *buf, size_t buflen)
-            throw (SocketTimeoutException, SocketIOException);
+    virtual void write(const char *buf, size_t buflen);
 
-    virtual void write(const std::string &str)
-            throw (SocketTimeoutException, SocketIOException);
+    virtual void write(const std::string &str);
 
-    virtual size_t read(char *buf, size_t buflen)
-            throw (SocketTimeoutException, SocketIOException);
-    virtual std::string readAll()
-            throw (SocketTimeoutException, SocketIOException);
+    virtual size_t read(char *buf, size_t buflen);
+    virtual std::string readAll();
 
     virtual bool connected() const;
     virtual int descriptor() const;
@@ -67,7 +61,7 @@ public:
     unsigned int timeout() const;
     void setTimeout(unsigned int timeoutMs);
 
-    void setNonBlocking(bool nonblocking) throw (SocketIOException);
+    void setNonBlocking(bool nonblocking);
 
     virtual ~SocketSingle();
 

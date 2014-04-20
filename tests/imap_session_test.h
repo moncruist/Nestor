@@ -36,6 +36,8 @@
 #include "service/service.h"
 #include "imap/imap_session.h"
 
+class DummySocket;
+
 class ImapSessionTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE (ImapSessionTest);
     CPPUNIT_TEST(testGreeting);
@@ -55,8 +57,9 @@ protected:
     void testLogoutCommand(void);
 
 private:
+    DummySocket *sock;
     nestor::imap::ImapSession *context;
-    nestor::service::Service service;
+    nestor::service::Service *service;
 };
 
 #endif /* IMAP_SESSION_TEST_H_ */
