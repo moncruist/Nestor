@@ -124,6 +124,7 @@ int IOObserver::wait() {
     evntbuf = new epoll_event[items_.size()];
     nfds = epoll_wait(efd_, evntbuf, items_.size(), effectiveTimeout);
 
+
     if (nfds == -1) {
         cout << "IOObserver::wait(): epoll_wait failed: " << strerror(errno)
                 << endl;
@@ -139,7 +140,6 @@ int IOObserver::wait() {
 
     for (int i = 0; i < nfds; i++) {
         int fd = evntbuf[i].data.fd;
-
         if (!items_.count(fd)) {
             cout << "IOObserver::wait(): unknown fd " << fd << endl;
             continue;
@@ -160,6 +160,10 @@ int IOObserver::wait() {
 
     delete[] evntbuf;
     return nfds;
+}
+
+int IOObserver::itemsCount() const {
+	return items_.size();
 }
 
 } /* namespace net */

@@ -22,11 +22,18 @@
 #include <unicode/ustream.h>
 #include <iostream>
 #include <string>
+#include <vector>
 #include <sstream>
+#include <functional>
 
 #include <algorithm>
 #include "net/http_client.h"
 #include "net/http_resource.h"
+#include "net/socket_listener.h"
+#include "net/io_observer.h"
+#include "net/socket_single.h"
+#include "imap/imap_session.h"
+#include "service/service.h"
 
 #include <unicode/ucnv.h>
 #include <unicode/utypes.h>
@@ -40,43 +47,46 @@
 using namespace std;
 using namespace nestor::net;
 using namespace nestor::rss;
+using namespace nestor::imap;
+using namespace nestor::service;
 using namespace icu;
 
+vector<ImapSession *> sessions;
 
-
-const string example_rss_host = "lenta.ru";
-const string example_rss_resource = "/rss";
+void startNewConnection(SocketListener *listener, IOObserver *observer) {
+	LOG_LVL("main", DEBUG, "Starting new conencttion");
+	SocketSingle *con = listener->accept();
+	ImapSession *session = new ImapSession(new Service(), con);
+	observer->append(con->descriptor(), bind(&ImapSession::processData, session));
+}
 
 int main(int argc, char *argv[]) {
     ostringstream oss;
+    SocketListener *listener;
 
     logger_init();
-    LOG("main", "HELLO!");
+    LOG("main", "Starting Nestor server");
 
-    return 0;
-    HttpClient client(example_rss_host);
-    HttpResource *response = client.getResource(example_rss_resource);
-    cout << "Code: " << response->code() << endl;
-    cout << "Code definition: " << response->codeDefinition() << endl;
-    cout << "Content type: " << response->contentType() << endl;
-    cout << "Content charset: " << response->contentCharset() << endl;
-    cout << "Content length: " << response->contentLength() << endl;
+    IOObserver *observer = new IOObserver(10000 /* 10 secondes */, []() { LOG("main", "No data"); });
 
-    RssChannel *channel = RssXmlParser::parseRss(reinterpret_cast<char *>(response->content()));
-    cout << "Rss channel info" << endl;
-    cout << "Title: " << channel->title() << endl;
-    cout << "Link: " << channel->link() << endl;
-    cout << "Description: " << channel->description() << endl;
-
-    for (auto i = channel->optional().begin(); i != channel->optional().end(); i++) {
-        cout << "[" << i->first << "] => " << i->second << endl;
+    try {
+    	listener = new SocketListener("localhost", 143);
+    	listener->startListen();
+    } catch (SocketIOException &e) {
+    	LOG_LVL("main", ERROR, "Cannot create listener: " << e.what());
+    	return -1;
     }
 
-    cout << "Items count " << channel->itemsCount() << endl;
-//    for (unsigned int i = 0; i < channel->itemsCount(); i++) {
-//        RssObject *item = channel->getItem(i);
-//        cout << "Title: " << item->caption() << endl;
-//        cout << "Text: " << item->text() << endl;
-//        cout << "Link: " << item->link() << endl;
-//    }
+    observer->append(listener->descriptor(), bind(startNewConnection, listener, observer));
+
+
+    LOG("main", "Nestor started");
+    while(observer->itemsCount() > 0) {
+    	observer->wait();
+    }
+
+    delete observer;
+    delete listener;
+
+    return 0;
 }

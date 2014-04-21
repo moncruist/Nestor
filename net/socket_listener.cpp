@@ -94,7 +94,7 @@ void SocketListener::startListen() {
         goto error;
     }
 
-    res = bind(sfd_, hints.ai_addr, hints.ai_addrlen);
+    res = bind(sfd_, servinfo->ai_addr, servinfo->ai_addrlen);
     if (res < 0) {
         oss_err << "SocketListener::startListen() bind error: " << strerror(errno);
         goto error;

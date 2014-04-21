@@ -62,6 +62,8 @@ public:
      */
     int wait();
 
+    int itemsCount() const;
+
 private:
     std::function<void (void)> timeoutCallback_;
     std::map<int, IOObserverCallbacks> items_;
