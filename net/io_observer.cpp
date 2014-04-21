@@ -38,7 +38,7 @@ namespace net {
 
 IOObserver::IOObserver(unsigned int timeoutMs,
         std::function<void(void)> onTimeout) throw (std::runtime_error)
-    : timeoutMs_(timeoutMs) {
+    : timeoutCallback_(onTimeout), timeoutMs_(timeoutMs) {
     efd_ = epoll_create(10);
     if (efd_ == -1) {
         ostringstream oss_err;
@@ -65,6 +65,11 @@ void IOObserver::append(int fd, callbackFunction readCallback,
 
     memset(&ev, 0, sizeof(epoll_event));
 
+    if (readCallback == nullptr && writeCallback == nullptr && errorCallback == nullptr) {
+        LOG_LVL("IOObserver", WARN, "No callbacks specified for fd: " << fd << ". Ignore appending.");
+        return;
+    }
+
     if (items_.count(fd)) {
         items_[fd].readCallback = readCallback;
         items_[fd].writeCallback = writeCallback;
@@ -75,6 +80,8 @@ void IOObserver::append(int fd, callbackFunction readCallback,
         items_.insert(make_pair(fd, callbacks));
         mod = false;
     }
+
+    ev.events = EPOLLET;
 
     if (items_[fd].readCallback != nullptr)
         ev.events |= EPOLLIN;

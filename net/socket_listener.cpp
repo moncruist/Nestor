@@ -64,7 +64,7 @@ unsigned short SocketListener::port() const {
 
 
 void SocketListener::startListen() {
-    addrinfo hints, *servinfo;
+    addrinfo hints, *servinfo, *rp;
     int res, flags;
     ostringstream oss_err;
 
@@ -73,7 +73,7 @@ void SocketListener::startListen() {
                 "SocketListener::startListen() Host length is 0");
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags |= AI_NUMERICSERV | AI_PASSIVE;
 
@@ -87,18 +87,28 @@ void SocketListener::startListen() {
         goto error;
     }
 
-    sfd_ = socket(servinfo->ai_family, servinfo->ai_socktype,
-            servinfo->ai_protocol);
-    if (sfd_ < 0) {
-        oss_err << "SocketListener::startListen() socket error: " << strerror(errno);
-        goto error;
+    for (rp = servinfo; rp != nullptr; rp = rp->ai_next) {
+        sfd_ = socket(servinfo->ai_family, servinfo->ai_socktype,
+                servinfo->ai_protocol);
+
+        if (sfd_ == -1) {
+            continue;
+        }
+
+        res = bind(sfd_, servinfo->ai_addr, servinfo->ai_addrlen);
+        if (res == 0) {
+            /* We successfully bind! */
+            break;
+        }
+
+        ::close(sfd_);
     }
 
-    res = bind(sfd_, servinfo->ai_addr, servinfo->ai_addrlen);
-    if (res < 0) {
+    if (rp == nullptr) {
         oss_err << "SocketListener::startListen() bind error: " << strerror(errno);
         goto error;
     }
+
 
     flags = fcntl(sfd_, F_GETFL, 0);
     if (flags < 0) {
@@ -110,6 +120,13 @@ void SocketListener::startListen() {
     flags |= O_NONBLOCK;
     if (fcntl(sfd_, F_SETFL, flags) != 0) {
         oss_err << "SocketListener::startListen() fcntl set error: "
+                << strerror(errno);
+        goto error;
+    }
+
+    res = listen(sfd_, 1);
+    if (res == -1) {
+        oss_err << "SocketListener::startListen() listen error: "
                 << strerror(errno);
         goto error;
     }
