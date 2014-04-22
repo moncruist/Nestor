@@ -51,13 +51,27 @@ using namespace nestor::imap;
 using namespace nestor::service;
 using namespace icu;
 
-vector<ImapSession *> sessions;
+vector<ImapSession *> closedSessions;
 
 void startNewConnection(SocketListener *listener, IOObserver *observer) {
-	LOG_LVL("main", DEBUG, "Starting new conencttion");
+	LOG("main", "Starting new conencttion");
 	SocketSingle *con = listener->accept();
 	ImapSession *session = new ImapSession(new Service(), con);
-	observer->append(con->descriptor(), bind(&ImapSession::processData, session));
+	auto onRead = [session, con]() {
+	    LOG("main", "fd " << con->descriptor()   << "Ready for reading");
+	    session->processData();
+	};
+
+	auto onWrite = [session, con]() {
+        LOG("main", "fd " << con->descriptor()   << "Ready for writing");
+        session->writeAnswers();
+    };
+	observer->append(con->descriptor(), onRead, onWrite);
+	con->setOnCloseCallback([observer](SocketSingle *s) {
+	    observer->remove(s->descriptor());
+	});
+
+	session->setOnExitCallback([](ImapSession *s) { closedSessions.push_back(s); });
 }
 
 int main(int argc, char *argv[]) {
@@ -67,15 +81,17 @@ int main(int argc, char *argv[]) {
     logger_init();
     LOG("main", "Starting Nestor server");
 
-    IOObserver *observer = new IOObserver(10000 /* 10 secondes */, []() { LOG("main", "No data"); });
+
 
     try {
-    	listener = new SocketListener("localhost", 143);
+    	listener = new SocketListener("localhost", 1430);
     	listener->startListen();
     } catch (SocketIOException &e) {
     	LOG_LVL("main", ERROR, "Cannot create listener: " << e.what());
     	return -1;
     }
+
+    IOObserver *observer = new IOObserver(10000 /* 10 seconds */, []() { LOG("main", "No data"); });
 
     observer->append(listener->descriptor(), bind(startNewConnection, listener, observer));
 
@@ -83,6 +99,12 @@ int main(int argc, char *argv[]) {
     LOG("main", "Nestor started");
     while(observer->itemsCount() > 0) {
     	observer->wait();
+
+    	if (closedSessions.size() > 0) {
+    	    for (ImapSession *s : closedSessions)
+    	        delete s;
+    	    closedSessions.clear();
+    	}
     }
 
     delete observer;

@@ -37,7 +37,7 @@ void logger_init(void) {
 
     Logger log = Logger::getRoot();
     SharedAppenderPtr logout = log.getAppender(LOG4CPLUS_TEXT("STDOUT"));
-    PatternLayout *layout = new PatternLayout(LOG4CPLUS_TEXT("%d{%d.%m.%Y %H:%M:%s:%q} %-5p [%T]: %m %n"));
+    PatternLayout *layout = new PatternLayout(LOG4CPLUS_TEXT("%d{%d.%m.%Y %H:%M:%S:%q} %-5p [%T]: %m %n"));
     logout->setLayout(auto_ptr<Layout>(layout));
 }
 

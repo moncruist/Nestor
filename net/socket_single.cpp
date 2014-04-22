@@ -47,6 +47,7 @@ SocketSingle::SocketSingle(string host, unsigned short port, bool manualConnect,
         unsigned int timeoutMs, bool nonblocking)
         : host_(host), port_(port), sockFd_(-1), manualConnect_(manualConnect), connected_(
                 false), timeoutMs_(timeoutMs), nonblocking_(nonblocking) {
+    setOnCloseCallback(nullptr);
     try {
         if (!manualConnect_)
             connect();
@@ -58,7 +59,8 @@ SocketSingle::SocketSingle(string host, unsigned short port, bool manualConnect,
 
 
 SocketSingle::SocketSingle(int fd, unsigned int timeoutMs, bool nonblocking)
-        : timeoutMs_(timeoutMs){
+        : timeoutMs_(timeoutMs) {
+    setOnCloseCallback(nullptr);
     if (fd >= 0) {
         connected_ = true;
         sockFd_ = fd;
@@ -150,6 +152,8 @@ void SocketSingle::close() {
         return;
 
     if (sockFd_ >= 0) {
+        if (onCloseCallback_)
+            onCloseCallback_(this);
         shutdown(sockFd_, SHUT_RDWR);
         ::close(sockFd_);
         sockFd_ = -1;
@@ -321,7 +325,11 @@ int SocketSingle::descriptor() const {
     return sockFd_;
 }
 
+void SocketSingle::setOnCloseCallback(CallbackFunction callback) {
+    onCloseCallback_ = callback;
+}
+
+
 } /* namespace net */
 } /* namespace nestor */
-
 

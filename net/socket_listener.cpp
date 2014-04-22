@@ -95,6 +95,13 @@ void SocketListener::startListen() {
             continue;
         }
 
+        int on = 1;
+        res = setsockopt(sfd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+        if (res == -1) {
+            ::close(sfd_);
+            continue;
+        }
+
         res = bind(sfd_, servinfo->ai_addr, servinfo->ai_addrlen);
         if (res == 0) {
             /* We successfully bind! */

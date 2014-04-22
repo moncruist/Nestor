@@ -34,6 +34,7 @@ namespace nestor {
 namespace imap {
 
 enum class ImapSessionState {
+    START,      // Start state
     CONNECTED,  // client just connected
     NON_AUTH,   // client has not  authenticated
     AUTH,       // client has authenticated and should choose folder
@@ -48,6 +49,9 @@ struct ImapCommand {
 };
 
 class ImapSession {
+// typedefs
+public:
+    using CallbackFunction = std::function<void (nestor::imap::ImapSession *)>;
 public:
 
     /**
@@ -60,9 +64,12 @@ public:
     virtual ~ImapSession();
 
     void processData();
-
+    void writeAnswers();
     const net::SocketSingle *socket() const;
     const service::Service *service() const;
+
+    ImapSessionState state() const;
+    void setOnExitCallback(CallbackFunction callback);
 
 private:
     std::string greetingString() const;
@@ -70,7 +77,6 @@ private:
     void rejectBad(ImapCommand *command, const std::string &comment);
     void rejectNo(ImapCommand *command, const std::string &comment);
     void switchState(ImapSessionState newState);
-    void writeAnswers();
 
     /* Command processing functions. Should meets CommandParserFunction
      * signature. After successful work every function should write command
@@ -99,6 +105,7 @@ private:
 
     service::Service *service_;
     net::SocketSingle *socket_;
+    CallbackFunction onExitCallback_;
 };
 
 } /* namespace imap */

@@ -23,6 +23,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <functional>
 
 namespace nestor {
 namespace net {
@@ -37,6 +38,10 @@ class SocketIOException : public std::runtime_error {
 
 
 class SocketSingle {
+
+// typedefs
+public:
+    using CallbackFunction = std::function<void (nestor::net::SocketSingle *)>;
 public:
     SocketSingle(std::string host = "localhost", unsigned short port = 80,
             bool manualConnect = false, unsigned int timeoutMs = 1000,
@@ -63,6 +68,8 @@ public:
 
     void setNonBlocking(bool nonblocking);
 
+    void setOnCloseCallback(CallbackFunction callback);
+
     virtual ~SocketSingle();
 
 private:
@@ -76,6 +83,8 @@ private:
     bool connected_;
     unsigned int timeoutMs_;
     bool nonblocking_;
+
+    CallbackFunction onCloseCallback_;
 };
 
 } /* namespace net */

@@ -81,7 +81,8 @@ static string* getCommandName(const string &data) {
 }
 
 ImapSession::ImapSession(service::Service *service, net::SocketSingle *socket)
-        : service_(service), socket_(socket) {
+        : state_(ImapSessionState::START), service_(service), socket_(socket),
+          onExitCallback_(nullptr) {
     if (service_ == nullptr)
         throw invalid_argument("ImapSession::ImapSession: service is nullptr");
     if (socket_ == nullptr)
@@ -90,8 +91,7 @@ ImapSession::ImapSession(service::Service *service, net::SocketSingle *socket)
 }
 
 ImapSession::~ImapSession() {
-    if (service_) delete service_;
-    if (socket_) delete socket_;
+    switchState(ImapSessionState::EXIT);
 }
 
 const net::SocketSingle* ImapSession::socket() const {
@@ -126,6 +126,9 @@ void ImapSession::processData() {
         commandName = getCommandName(line);
 
         if (!tag || !commandName) {
+            ImapCommand com {line, "", ""};
+            rejectBad(&com, "Missing command");
+
             incomingData_.erase(0, crlfPos + 2); // deleting wrong line from buffer
             if (tag) delete tag;
             if (commandName) delete commandName;
@@ -137,6 +140,8 @@ void ImapSession::processData() {
         command->name = *commandName;
 
         stringToUpper(command->name);
+
+        LOG_LVL("ImapSession", DEBUG, "Received command: {" << command->tag << "," << command->name << "}");
 
         int commandEnd;
 
@@ -158,6 +163,10 @@ void ImapSession::processData() {
 
         if (tag) delete tag;
         if (commandName) delete commandName;
+
+        if (state_ == ImapSessionState::EXIT) {
+            break;
+        }
     }
 }
 
@@ -227,6 +236,8 @@ int ImapSession::processLogout(ImapCommand *command) {
     oss << "* BYE IMAP4rev1 Server logging out" << CRLF << command->tag
             << " OK " << command->name << " completed" << CRLF;
     answersData_.append(oss.str());
+    writeAnswers();
+    switchState(ImapSessionState::EXIT);
     return ret;
 }
 
@@ -323,13 +334,32 @@ void ImapSession::switchState(ImapSessionState newState) {
     if (newState == state_)
         return; // Same state, nothing to do.
 
-    if (newState == ImapSessionState::CONNECTED) {
+    if (state_ == ImapSessionState::EXIT)
+        return; // Exited session couldn't start again
+
+    switch(newState) {
+    case ImapSessionState::CONNECTED:
         answersData_.append(greetingString());
         state_ = ImapSessionState::NON_AUTH;
-    } else {
+        break;
+
+    case ImapSessionState::EXIT:
+        /* Perfoming exit. Deleting service and socket. */
+        delete service_;
+        service_ = nullptr;
+        socket_->close();
+        delete socket_;
+        socket_ = nullptr;
+
+        state_ = newState;
+        /* Notify others. */
+        if (onExitCallback_)
+            onExitCallback_(this);
+        break;
+
+    default:
         state_ = newState;
     }
-    writeAnswers();
 }
 
 void ImapSession::writeAnswers() {
@@ -347,6 +377,13 @@ void ImapSession::writeAnswers() {
     }
 }
 
+ImapSessionState ImapSession::state() const {
+    return state_;
+}
+
+void ImapSession::setOnExitCallback(CallbackFunction callback) {
+    onExitCallback_ = callback;
+}
 
 } /* namespace imap */
 } /* namespace nestor */
