@@ -126,7 +126,7 @@ void ImapSession::processData() {
         commandName = getCommandName(line);
 
         if (!tag || !commandName) {
-            ImapCommand com {line, "", ""};
+            ImapCommand com {line, ""};
             rejectBad(&com, "Missing command");
 
             incomingData_.erase(0, crlfPos + 2); // deleting wrong line from buffer

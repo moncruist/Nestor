@@ -45,7 +45,6 @@ enum class ImapSessionState {
 struct ImapCommand {
     std::string tag;
     std::string name;
-    std::string params;
 };
 
 class ImapSession {
