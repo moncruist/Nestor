@@ -60,12 +60,21 @@ else()
 	include_directories(${LOG4CPLUS_INCLUDE_DIRS})
 endif()
 
+find_package(LibConfig++ REQUIRED)
+if(NOT LIBCONFIG++_FOUND)
+	message(SEND_ERROR "Cannot find LibConfig++ library")
+	return()
+else()
+	include_directories(${LIBCONFIG++_INCLUDE_DIR})
+endif()
+
 set(NESTOR_LIB_LINKS  ${ICU_LIBRARIES}
 	                  ${ICU_DATA_LIBRARIES}
 	                  ${ICU_IO_LIBRARIES}
 	                  ${ICU_I18N_LIBRARIES}
 	                  ${TINYXML2_LIBRARY}
-	                  ${LOG4CPLUS_LIBRARIES})
+	                  ${LOG4CPLUS_LIBRARIES}
+	                  ${LIBCONIFG++_LILBRARY})
 
 if(UNIX)
 	add_definitions(-DUNIX)
