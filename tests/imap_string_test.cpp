@@ -43,7 +43,7 @@ void ImapStringTest::testParsingImapString(void) {
     idx = imapString.addBufferToParse(imapStringRaw);
 
     string result = imapString.data();
-    CPPUNIT_ASSERT(idx == imapStringRaw.length() - 3);
+    CPPUNIT_ASSERT(static_cast<size_t>(idx) == imapStringRaw.length() - 3);
     CPPUNIT_ASSERT(imapString.type() == ImapStringType::LITERAL);
     CPPUNIT_ASSERT(result == "Hello World");
     CPPUNIT_ASSERT(imapString.status() == ImapStringStatus::COMPLETED);
@@ -69,7 +69,7 @@ void ImapStringTest::testQuotedSimpleString(void) {
 	idx = imapString.addBufferToParse(imapStringRaw);
 
 	string result = imapString.data();
-	CPPUNIT_ASSERT(idx == imapStringRaw.length() - 1);
+	CPPUNIT_ASSERT(static_cast<size_t>(idx) == imapStringRaw.length() - 1);
 	CPPUNIT_ASSERT(imapString.type() == ImapStringType::QUOTED);
 	CPPUNIT_ASSERT(imapString.status() == ImapStringStatus::COMPLETED);
 	CPPUNIT_ASSERT(result == "quoted");
@@ -83,7 +83,7 @@ void ImapStringTest::testQuotedUncompletedString(void) {
 	idx = imapString.addBufferToParse(imapStringRaw);
 
 
-	CPPUNIT_ASSERT(idx == imapStringRaw.length() - 1);
+	CPPUNIT_ASSERT(static_cast<size_t>(idx) == imapStringRaw.length() - 1);
 	CPPUNIT_ASSERT(imapString.type() == ImapStringType::QUOTED);
 	CPPUNIT_ASSERT(imapString.status() == ImapStringStatus::UNCOMPLETED);
 

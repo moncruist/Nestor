@@ -112,7 +112,8 @@ ImapStringType ImapString::detectType(const std::string &buffer, int *pos, int *
 
 
 int ImapString::addBufferToParse(std::string &buffer) {
-    int pos, endQuotePos, stringLength;
+    int pos, stringLength;
+    size_t upos, endQuotePos;
     pos = stringLength = -1;
 
     if (status_ == ImapStringStatus::COMPLETED)
@@ -135,29 +136,31 @@ int ImapString::addBufferToParse(std::string &buffer) {
         pos++; // If pos points to quote or literal end,
                // shift pos to the first string character
     
+    upos = pos; // Convert to uint, because string operates with unsigned numbers.
+
     switch (type_) {
     case ImapStringType::LITERAL_NONSYNC:
     case ImapStringType::LITERAL:
         // Checking if we already parsed CRLF
         if (!literalCrLfParsed_) {
             //Parsing CRLF
-            if (pos < buffer.length() - 1 && buffer.substr(pos, 2).compare(CRLF) == 0) {
-                pos += 2;
+            if (upos < buffer.length() - 1 && buffer.substr(upos, 2).compare(CRLF) == 0) {
+                upos += 2;
                 literalCrLfParsed_ = true;
             }
             status_ = ImapStringStatus::UNCOMPLETED;
         }
-        if (literalCrLfParsed_ && pos < buffer.length()) {
+        if (literalCrLfParsed_ && upos < buffer.length()) {
             // Parsing rest of the string
-            int expectedLength = parsedLength_ - length_;
-            if (expectedLength > buffer.length() - pos)
-                expectedLength = buffer.length() - pos;
-            data_.append(buffer.substr(pos, expectedLength));
+            size_t expectedLength = parsedLength_ - length_;
+            if (expectedLength > buffer.length() - upos)
+                expectedLength = buffer.length() - upos;
+            data_.append(buffer.substr(upos, expectedLength));
             length_ += expectedLength;
-            pos += expectedLength;
+            upos += expectedLength;
             if (length_ == parsedLength_) {
                 status_ = ImapStringStatus::COMPLETED;
-                return pos;
+                return upos;
             }
         }
         break;
@@ -165,20 +168,20 @@ int ImapString::addBufferToParse(std::string &buffer) {
     case ImapStringType::QUOTED:
         // Here we only need to find the closing quote.
         // Until them any character is part of the imap string.
-        endQuotePos = buffer.find("\"", pos);
+        endQuotePos = buffer.find("\"", upos);
         if (endQuotePos == string::npos) {
             // We don't find closing quote. Appending tail of
             // the buffer to out already parsed data.
             status_ = ImapStringStatus::UNCOMPLETED;
-            data_.append(buffer.substr(pos, string::npos));
-            length_ += buffer.length() - pos;
+            data_.append(buffer.substr(upos, string::npos));
+            length_ += buffer.length() - upos;
             parsedLength_ = length_;
             return buffer.length() - 1;
         } else {
             // Here we finally have found the closing quote.
             status_ = ImapStringStatus::COMPLETED;
-            data_.append(buffer.substr(pos, endQuotePos - pos));
-            length_ += endQuotePos - pos;
+            data_.append(buffer.substr(upos, endQuotePos - upos));
+            length_ += endQuotePos - upos;
             parsedLength_ = length_;
             return endQuotePos;
         }
