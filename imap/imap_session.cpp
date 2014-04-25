@@ -370,7 +370,7 @@ void ImapSession::writeAnswers() {
             IMAP_LOG_LVL(WARN,
                     "Cannot write to the socket" << socket_->descriptor() << ": " << e.what());
         } catch (SocketTimeoutException &e) {
-            IAMP_LOG_LVL(WARN,
+            IMAP_LOG_LVL(WARN,
                     "Timeout socket " << socket_->descriptor() << "; " << e.what());
         }
         answersData_.clear();
