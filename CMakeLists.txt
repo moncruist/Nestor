@@ -77,7 +77,7 @@ set(NESTOR_LIB_LINKS  ${ICU_LIBRARIES}
 	                  ${ICU_I18N_LIBRARIES}
 	                  ${TINYXML2_LIBRARY}
 	                  ${LOG4CPLUS_LIBRARIES}
-	                  ${LIBCONIFG++_LILBRARY})
+	                  ${LIBCONFIG++_LIBRARY})
 
 if(UNIX)
 	add_definitions(-DUNIX)
