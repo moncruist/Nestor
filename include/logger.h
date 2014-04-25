@@ -36,5 +36,22 @@ void logger_init(void);
 
 #define LOG(name, txt) LOG_LVL(name, INFO, txt)
 
+#define MAIN_LOGGER_NAME    "main"
+#define IMAP_LOGGER_NAME    "imap"
+#define NET_LOGGER_NAME     "net"
+#define SERVICE_LOGGER_NAME "service"
+
+#define MAIN_LOG_LVL(lvl, txt) LOG_LVL(MAIN_LOGGER_NAME, lvl, txt)
+#define MAIN_LOG(txt) LOG(MAIN_LOGGER_NAME, txt)
+
+
+#define IMAP_LOG_LVL(lvl, txt) LOG_LVL(IMAP_LOGGER_NAME, lvl, txt)
+#define IMAP_LOG(txt) LOG(IMAP_LOGGER_NAME, txt)
+
+#define NET_LOG_LVL(lvl, txt) LOG_LVL(NET_LOGGER_NAME, lvl, txt)
+#define NET_LOG(txt) LOG(NET_LOGGER_NAME, txt)
+
+#define SERVICE_LOG_LVL(lvl, txt) LOG_LVL(SERVICE_LOGGER_NAME, lvl, txt)
+#define SERVICE_LOG(txt) LOG(SERVICE_LOGGER_NAME, txt)
 
 #endif /* LOGGER_H_ */

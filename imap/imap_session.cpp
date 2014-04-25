@@ -141,7 +141,7 @@ void ImapSession::processData() {
 
         stringToUpper(command->name);
 
-        LOG_LVL("ImapSession", DEBUG, "Received command: {" << command->tag << "," << command->name << "}");
+        IMAP_LOG_LVL(DEBUG, "Received command: {" << command->tag << "," << command->name << "}");
 
         int commandEnd;
 
@@ -299,7 +299,7 @@ int ImapSession::processLogin(ImapCommand *command) {
         oss << command->tag << " OK " << command->name << " completed" << CRLF;
         answersData_.append(oss.str());
 
-        LOG_LVL("ImapSession", INFO, "User " << username << " successfully logged in");
+        IMAP_LOG_LVL(INFO, "User " << username << " successfully logged in");
     } else {
         rejectNo(command, "Invalid user name or password");
     }
@@ -367,10 +367,10 @@ void ImapSession::writeAnswers() {
         try {
             socket_->write(answersData_);
         } catch (SocketIOException &e) {
-            LOG_LVL("ImapSession", WARN,
+            IMAP_LOG_LVL(WARN,
                     "Cannot write to the socket" << socket_->descriptor() << ": " << e.what());
         } catch (SocketTimeoutException &e) {
-            LOG_LVL("ImapSession", WARN,
+            IAMP_LOG_LVL(WARN,
                     "Timeout socket " << socket_->descriptor() << "; " << e.what());
         }
         answersData_.clear();

@@ -66,7 +66,7 @@ void IOObserver::append(int fd, callbackFunction readCallback,
     memset(&ev, 0, sizeof(epoll_event));
 
     if (readCallback == nullptr && writeCallback == nullptr && errorCallback == nullptr) {
-        LOG_LVL("IOObserver", WARN, "No callbacks specified for fd: " << fd << ". Ignore appending.");
+        NET_LOG_LVL(WARN, "No callbacks specified for fd: " << fd << ". Ignore appending.");
         return;
     }
 

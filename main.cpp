@@ -43,6 +43,7 @@
 #include "rss/rss_xml_parser.h"
 #include "rss/rss_channel.h"
 
+#include "service/configuration.h"
 
 using namespace std;
 using namespace nestor::net;
@@ -54,16 +55,16 @@ using namespace icu;
 vector<ImapSession *> closedSessions;
 
 void startNewConnection(SocketListener *listener, IOObserver *observer) {
-	LOG("main", "Starting new conencttion");
+	MAIN_LOG("Starting new conencttion");
 	SocketSingle *con = listener->accept();
 	ImapSession *session = new ImapSession(new Service(), con);
 	auto onRead = [session, con]() {
-	    LOG("main", "fd " << con->descriptor()   << "Ready for reading");
+	    MAIN_LOG("fd " << con->descriptor()   << "Ready for reading");
 	    session->processData();
 	};
 
 	auto onWrite = [session, con]() {
-        LOG("main", "fd " << con->descriptor()   << "Ready for writing");
+	    MAIN_LOG("fd " << con->descriptor()   << "Ready for writing");
         session->writeAnswers();
     };
 	observer->append(con->descriptor(), onRead, onWrite);
@@ -79,7 +80,7 @@ int main(int argc, char *argv[]) {
     SocketListener *listener;
 
     logger_init();
-    LOG("main", "Starting Nestor server");
+    MAIN_LOG("Starting Nestor server");
 
 
 
@@ -87,16 +88,16 @@ int main(int argc, char *argv[]) {
     	listener = new SocketListener("localhost", 1430);
     	listener->startListen();
     } catch (SocketIOException &e) {
-    	LOG_LVL("main", ERROR, "Cannot create listener: " << e.what());
+    	MAIN_LOG_LVL(ERROR, "Cannot create listener: " << e.what());
     	return -1;
     }
 
-    IOObserver *observer = new IOObserver(10000 /* 10 seconds */, []() { LOG("main", "No data"); });
+    IOObserver *observer = new IOObserver(10000 /* 10 seconds */, []() { MAIN_LOG("No data"); });
 
     observer->append(listener->descriptor(), bind(startNewConnection, listener, observer));
 
 
-    LOG("main", "Nestor started");
+    MAIN_LOG("Nestor started");
     while(observer->itemsCount() > 0) {
     	observer->wait();
 
