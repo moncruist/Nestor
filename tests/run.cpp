@@ -30,18 +30,36 @@
 #include <cppunit/TestRunner.h>
 #include <cppunit/CompilerOutputter.h>
 #include <cppunit/XmlOutputter.h>
+#include <fstream>
+#include <iomanip>
+#include <log4cplus/helpers/property.h>
+#include <log4cplus/asyncappender.h>
 #include "logger.h"
 #include "imap_session_test.h"
 #include "imap_string_test.h"
 
 using namespace std;
-
+using namespace log4cplus;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( ImapSessionTest );
 CPPUNIT_TEST_SUITE_REGISTRATION( ImapStringTest );
 
+void test_logger_init(void) {
+    log4cplus::initialize();
+
+    BasicConfigurator config;
+    config.configure();
+
+    Logger log = Logger::getRoot();
+    log.setLogLevel(OFF_LOG_LEVEL);
+    SharedAppenderPtr logout = log.getAppender(LOG4CPLUS_TEXT("STDOUT"));
+    PatternLayout *layout = new PatternLayout(LOG4CPLUS_TEXT("%d{%d.%m.%Y %H:%M:%S:%q} %-5p [%T]: %m %n"));
+    logout->setLayout(auto_ptr<Layout>(layout));
+}
+
 int main(int argc, char* argv[])
 {
+    test_logger_init();
     // informs test-listener about testresults
     CppUnit::TestResult testresult;
 
