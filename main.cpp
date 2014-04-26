@@ -82,7 +82,8 @@ int main(int argc, char *argv[]) {
     logger_init();
     MAIN_LOG("Starting Nestor server");
 
-
+    Configuration::instance()->load("test.cfg");
+    Configuration::instance()->store("test.cfg");
 
     try {
     	listener = new SocketListener("localhost", 1430);

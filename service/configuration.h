@@ -23,6 +23,9 @@
 
 #include <mutex>
 #include <string>
+#include <array>
+
+#include <libconfig.h++>
 
 namespace nestor {
 namespace service {
@@ -32,18 +35,25 @@ namespace service {
  */
 class ConfigurationSqlite {
 public:
-    static const std::string DEFAULT_DATABESE_PATH;
+    static const std::string DEFAULT_DATABASE_PATH;
 
     explicit ConfigurationSqlite();
     ~ConfigurationSqlite();
 
     void reset();
 
+    void load(const libconfig::Config *parser);
+    void store(libconfig::Config *parser);
+
     std::string databasePath() const;
     void setDatabasePath(std::string &databasePath);
 
 private:
     std::string databasePath_;
+
+// constants
+private:
+    static const std::string DATABASE_PATH_CONFIG_PATH;
 };
 
 /**
@@ -52,16 +62,28 @@ private:
 class Configuration {
 // constants
 public:
+
+    /**
+     * List of supported database providers
+     */
+    static const int DATABASE_PROVIDERS_LENGTH;
+    static const std::string * const DATABASE_PROVIDERS;
+
+    /**
+     * Default database provider.
+     */
     static const std::string DEFAULT_DATABASE_PROVIDER;
+
 public:
     static Configuration *instance();
 
     void reset();
-    void load(int argc, char *argv[]);
+    void load(const std::string &configFile);
+    void store(const std::string &configFile);
 
     const std::string& databaseProvider() const;
     void setDatabaseProvider(const std::string& databaseProvider);
-    const ConfigurationSqlite& sqliteConfig() const;
+    ConfigurationSqlite& sqliteConfig();
     void setSqliteConfig(const ConfigurationSqlite& sqliteConfig);
 
 private:
@@ -77,6 +99,12 @@ private:
 private:
     std::string databaseProvider_;
     ConfigurationSqlite sqliteConfig_;
+
+    libconfig::Config *parser_;
+
+// private constants
+private:
+    static const char *DATABASE_PROVIDER_PATH;
 };
 
 } /* namespace service */
