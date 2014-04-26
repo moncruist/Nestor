@@ -30,6 +30,8 @@ using namespace nestor::imap;
 using namespace nestor::service;
 using namespace nestor::net;
 
+string dump_writebuf, dump_readbuf;
+
 class DummySocket : public SocketSingle {
 public:
     string writebuf;
@@ -48,7 +50,10 @@ public:
         clearBufs();
     }
     void close() override {
-        clearBufs();
+        dump_writebuf.clear();
+        dump_readbuf.clear();
+        dump_writebuf = writebuf;
+        dump_readbuf = readbuf;
     }
 
     void write(const char *buf, size_t buflen) override {
@@ -88,6 +93,7 @@ void ImapSessionTest::setUp(void) {
     sock = new DummySocket();
     service = new Service();
     context = new ImapSession(service, sock);
+    context->writeAnswers();
     sock->clearBufs();
 }
 
@@ -99,7 +105,7 @@ void ImapSessionTest::testGreeting(void) {
     Service *service = new Service();
     DummySocket *sock = new DummySocket();
     nestor::imap::ImapSession session(service, sock);
-
+    session.writeAnswers();
     std::string answer = sock->writebuf;
     CPPUNIT_ASSERT(answer == "* OK IMAP4revl server ready" CRLF);
 }
@@ -138,7 +144,6 @@ void ImapSessionTest::testLogoutCommand(void) {
     sock->readbuf.append(commandStr);
 
     context->processData();
-    actualAnswer = sock->writebuf;
+    actualAnswer = dump_writebuf;
     CPPUNIT_ASSERT_EQUAL(expectedAnswer, actualAnswer);
-    sock->clearBufs();
 }
