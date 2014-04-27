@@ -91,8 +91,12 @@ add_library (nestorcom ${NESTOR_LIB_LIST})
 
 add_subdirectory(tests)
 
+include_directories(lib/sqlite-amalgamation-3080403)
+add_subdirectory(lib/sqlite-amalgamation-3080403)
+
 add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} nestorcom
+                                      sqlite3
                                       ${NESTOR_LIB_LINKS})
 
 enable_testing()                                      
