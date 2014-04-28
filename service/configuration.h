@@ -70,21 +70,30 @@ public:
     static const std::string * const DATABASE_PROVIDERS;
 
     /**
-     * Default database provider.
+     * List of default paths for looking up configuration file.
      */
+    static const int DEFAULT_CONFIG_FILE_PATHS_LENGTH;
+    static const std::string * const DEFAULT_CONFIG_FILE_PATHS;
+
     static const std::string DEFAULT_DATABASE_PROVIDER;
+    static const std::string DEFAULT_LOG_FILE;
 
 public:
     static Configuration *instance();
 
     void reset();
-    void load(const std::string &configFile);
-    void store(const std::string &configFile);
+    bool load();
+    bool load(const std::string &configFile);
+
+    bool store();
+    bool store(const std::string &configFile);
 
     const std::string& databaseProvider() const;
     void setDatabaseProvider(const std::string& databaseProvider);
     ConfigurationSqlite& sqliteConfig();
     void setSqliteConfig(const ConfigurationSqlite& sqliteConfig);
+    const std::string& logFile() const;
+    void setLogFile(const std::string& logFile);
 
 private:
     explicit Configuration();
@@ -98,13 +107,16 @@ private:
 // members
 private:
     std::string databaseProvider_;
+    std::string logFile_;
     ConfigurationSqlite sqliteConfig_;
 
     libconfig::Config *parser_;
+    std::string loadedConfigFile_;
 
 // private constants
 private:
     static const char *DATABASE_PROVIDER_PATH;
+    static const char *LOG_FILE_PATH;
 };
 
 } /* namespace service */

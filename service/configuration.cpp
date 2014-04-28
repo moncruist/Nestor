@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include <mutex>
 #include <cstring>
-#include "logger.h"
+#include <iostream>
 #include "configuration.h"
 
 using namespace std;
@@ -56,7 +56,7 @@ string ConfigurationSqlite::databasePath() const {
 
 void ConfigurationSqlite::load(const libconfig::Config* parser) {
     if (parser == nullptr) {
-        SERVICE_LOG_LVL(ERROR, "ConfigurationSqlite::load: Invalid argument: parser == nullptr");
+        cerr << "ConfigurationSqlite::load: Invalid argument: parser == nullptr" << endl;
         return;
     }
 
@@ -96,16 +96,25 @@ Configuration *Configuration::instance_ = nullptr;
 recursive_mutex Configuration::instanceLock_;
 
 const int Configuration::DATABASE_PROVIDERS_LENGTH = 1;
-
 const std::string DATABASE_PROVIDERS_DATA[Configuration::DATABASE_PROVIDERS_LENGTH] = {
         "sqlite"
 };
-
 const std::string * const Configuration::DATABASE_PROVIDERS = DATABASE_PROVIDERS_DATA;
 
-const string Configuration::DEFAULT_DATABASE_PROVIDER = "sqlite";
 
+const string Configuration::DEFAULT_DATABASE_PROVIDER = "sqlite";
 const char *Configuration::DATABASE_PROVIDER_PATH = "database_provider";
+
+const string Configuration::DEFAULT_LOG_FILE = "/var/log/nestor/nestor.log";
+const char *Configuration::LOG_FILE_PATH = "log_file";
+
+
+const int Configuration::DEFAULT_CONFIG_FILE_PATHS_LENGTH = 2;
+const std::string DEFAULT_CONFIG_FILE_PATHS_DATA[Configuration::DEFAULT_CONFIG_FILE_PATHS_LENGTH] = {
+        "/etc/nestor/nestor.conf",
+        "/etc/nestor.conf"
+};
+const std::string * const Configuration::DEFAULT_CONFIG_FILE_PATHS = DEFAULT_CONFIG_FILE_PATHS_DATA;
 
 Configuration::Configuration() {
     parser_ = new libconfig::Config();
@@ -132,7 +141,7 @@ void Configuration::setDatabaseProvider(const std::string& databaseProvider) {
         }
     }
 
-    SERVICE_LOG_LVL(WARN, "Configuration::setDatabaseProvider: Unsupported database provider: " << databaseProvider);
+    cerr << "Configuration::setDatabaseProvider: Unsupported database provider: " << databaseProvider << endl;
 }
 
 
@@ -163,63 +172,102 @@ void Configuration::reset() {
     lock_guard<recursive_mutex> locker(instanceLock_);
 
     setDatabaseProvider(DEFAULT_DATABASE_PROVIDER);
+    setLogFile(DEFAULT_LOG_FILE);
     sqliteConfig_.reset();
 }
 
-void Configuration::load(const std::string &configFile) {
+
+bool Configuration::load() {
+    loadedConfigFile_ = "";
+    for (int i = 0; i < DEFAULT_CONFIG_FILE_PATHS_LENGTH; i++) {
+        if (load(DEFAULT_CONFIG_FILE_PATHS[i])) {
+            loadedConfigFile_ = DEFAULT_CONFIG_FILE_PATHS[i];
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool Configuration::load(const std::string &configFile) {
     struct stat fileInfo;
     int r;
 
     r = stat(configFile.c_str(), &fileInfo);
     if (r == -1) {
-        SERVICE_LOG_LVL(ERROR, "Configuration::load: File " << configFile<< " - stat failed with error: " << strerror(errno));
-        return;
+        cerr << "Configuration::load: File " << configFile<< " - stat failed with error: " << strerror(errno) << endl;
+        return false;
     }
 
     if (!S_ISREG(fileInfo.st_mode)) {
-        SERVICE_LOG_LVL(ERROR, "Configuration::load: File " << configFile << " is not a regular file");
-        return;
+        cerr << "Configuration::load: File " << configFile << " is not a regular file" << endl;
+        return false;
     }
 
     try {
         parser_->readFile(configFile.c_str());
     } catch (const FileIOException &e) {
-        SERVICE_LOG_LVL(ERROR,
-                "Configuration::load: Cannot load config file: " << configFile);
-        return;
+        cerr <<  "Configuration::load: Cannot load config file: " << configFile << endl;
+        return false;
     } catch (const ParseException &e) {
-        SERVICE_LOG_LVL(ERROR,
-                "Configuration::load: Cannot parse config file: " << e.getFile() << ". Line: "
-                << e.getLine() << " - " << e.getError());
-        return;
+        cerr << "Configuration::load: Cannot parse config file: " << e.getFile() << ". Line: "
+                << e.getLine() << " - " << e.getError() << endl;
+        return false;
     }
 
-    string provider;
-    if (parser_->lookupValue(DATABASE_PROVIDER_PATH, provider))
-        setDatabaseProvider(provider);
+    string str;
+    if (parser_->lookupValue(DATABASE_PROVIDER_PATH, str))
+        setDatabaseProvider(str);
+    if (parser_->lookupValue(LOG_FILE_PATH, str))
+        setLogFile(str);
 
     sqliteConfig_.load(parser_);
 
-    SERVICE_LOG("Configuration::load: Configuration successfully loaded");
+    cout << "Configuration::load: Configuration successfully loaded from file " << configFile << endl;
+    return true;
 }
 
-void Configuration::store(const std::string& configFile) {
+
+bool Configuration::store() {
+    if (loadedConfigFile_ != "") {
+        return store(loadedConfigFile_);
+    } else {
+        for (int i = 0; i < DEFAULT_CONFIG_FILE_PATHS_LENGTH; i++) {
+            if (store(DEFAULT_CONFIG_FILE_PATHS[i])) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+bool Configuration::store(const std::string& configFile) {
     delete parser_;
     parser_ = new Config();
     Setting &root = parser_->getRoot();
     root.add(DATABASE_PROVIDER_PATH, Setting::TypeString) = databaseProvider_;
+    root.add(LOG_FILE_PATH, Setting::TypeString) = logFile_;
 
     sqliteConfig_.store(parser_);
 
     try {
         parser_->writeFile(configFile.c_str());
     } catch (const FileIOException &e) {
-        SERVICE_LOG_LVL(ERROR,
-                "Configuration::store: Cannot load config file: " << configFile);
-        return;
+        cerr << "Configuration::store: Cannot load config file: " << configFile << endl;
+        return false;
     }
 
-    SERVICE_LOG("Configuration::store: Configuration successfully stored");
+    cout << "Configuration::store: Configuration successfully stored to file " << configFile << endl;
+    return true;
+}
+
+const std::string& Configuration::logFile() const {
+    return logFile_;
+}
+
+void Configuration::setLogFile(const std::string& logFile) {
+    logFile_ = logFile;
 }
 
 /* ============ Configuration END== ====================== */

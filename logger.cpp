@@ -22,14 +22,17 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <string>
+#include <ios>
 #include <log4cplus/helpers/property.h>
 #include <log4cplus/asyncappender.h>
+#include <log4cplus/fileappender.h>
 #include "logger.h"
 
 using namespace std;
 using namespace log4cplus;
 
-void logger_init(void) {
+void logger_init(const string &logFile) {
     log4cplus::initialize();
 
     BasicConfigurator config;
@@ -39,5 +42,14 @@ void logger_init(void) {
     SharedAppenderPtr logout = log.getAppender(LOG4CPLUS_TEXT("STDOUT"));
     PatternLayout *layout = new PatternLayout(LOG4CPLUS_TEXT("%d{%d.%m.%Y %H:%M:%S:%q} %-5p [%T]: %m %n"));
     logout->setLayout(auto_ptr<Layout>(layout));
+
+    FileAppender *fileAppender = new FileAppender(logFile, ios_base::app, false);
+    fileAppender->setName(LOG4CPLUS_TEXT("FILEOUT"));
+    PatternLayout *fileLayout = new PatternLayout(LOG4CPLUS_TEXT("%d{%d.%m.%Y %H:%M:%S:%q} %-5p [%T]: %m %n"));
+    fileAppender->setLayout(auto_ptr<Layout>(fileLayout));
+    log.addAppender(SharedAppenderPtr(fileAppender));
 }
 
+void logger_deinit(void) {
+    Logger::shutdown();
+}

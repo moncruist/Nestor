@@ -25,8 +25,10 @@
 #include <log4cplus/loggingmacros.h>
 #include <log4cplus/configurator.h>
 #include <iomanip>
+#include <string>
 
-void logger_init(void);
+void logger_init(const std::string &logFile);
+void logger_deinit(void);
 
 
 #define LOG_LVL(name, lvl, txt) do { \

@@ -27,6 +27,9 @@
 #include <functional>
 
 #include <algorithm>
+
+#include <signal.h>
+#include <cstring>
 #include "net/http_client.h"
 #include "net/http_resource.h"
 #include "net/socket_listener.h"
@@ -52,7 +55,9 @@ using namespace nestor::imap;
 using namespace nestor::service;
 using namespace icu;
 
-vector<ImapSession *> closedSessions;
+static vector<ImapSession *> closedSessions;
+static SocketListener *listener;
+static IOObserver *observer;
 
 void startNewConnection(SocketListener *listener, IOObserver *observer) {
 	MAIN_LOG("Starting new conencttion");
@@ -75,15 +80,28 @@ void startNewConnection(SocketListener *listener, IOObserver *observer) {
 	session->setOnExitCallback([](ImapSession *s) { closedSessions.push_back(s); });
 }
 
+void onSigInt(int sig) {
+    if (listener && observer) {
+        MAIN_LOG("Closing listener");
+
+        observer->remove(listener->descriptor());
+        listener->close();
+    }
+}
+
 int main(int argc, char *argv[]) {
     ostringstream oss;
-    SocketListener *listener;
 
-    logger_init();
+
+    Configuration *config = Configuration::instance();
+
+    config->load();
+    config->store();
+
+    logger_init(config->logFile());
+
     MAIN_LOG("Starting Nestor server");
 
-    Configuration::instance()->load("test.cfg");
-    Configuration::instance()->store("test.cfg");
 
     try {
     	listener = new SocketListener("localhost", 1430);
@@ -93,10 +111,14 @@ int main(int argc, char *argv[]) {
     	return -1;
     }
 
-    IOObserver *observer = new IOObserver(10000 /* 10 seconds */, []() { MAIN_LOG("No data"); });
+    observer = new IOObserver(10000 /* 10 seconds */, []() { MAIN_LOG("No data"); });
 
     observer->append(listener->descriptor(), bind(startNewConnection, listener, observer));
 
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = onSigInt;
+    sigaction(SIGINT, &sa, NULL);
 
     MAIN_LOG("Nestor started");
     while(observer->itemsCount() > 0) {
@@ -109,8 +131,11 @@ int main(int argc, char *argv[]) {
     	}
     }
 
+    MAIN_LOG("Nestor finished");
+
     delete observer;
     delete listener;
 
+    logger_deinit();
     return 0;
 }
