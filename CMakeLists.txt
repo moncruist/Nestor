@@ -4,35 +4,7 @@ project(nestor)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
-set(NESTOR_LIB_LIST logger.cpp
-             utils/string.cpp
-             utils/string.h
-             net/http_client.cpp
-             net/http_client.h
-             net/socket_single.cpp
-             net/socket_single.h
-             net/socket_listener.cpp
-             net/socket_listener.h
-             net/http_resource.cpp
-             net/http_resource.h
-             net/http_response_parser.cpp
-             net/http_response_parser.h
-             net/io_observer.cpp
-             net/io_observer.h
-             rss/rss_object.cpp
-             rss/rss_object.h
-             rss/rss_channel.cpp
-             rss/rss_channel.h
-             rss/rss_xml_parser.cpp
-             rss/rss_xml_parser.h
-             imap/imap_session.cpp
-             imap/imap_session.h
-             imap/imap_string.cpp
-             imap/imap_string.h
-             service/service.cpp
-             service/service.h
-             service/configuration.cpp
-             service/configuration.h)
+set(NESTOR_LIB_LIST logger.cpp)
              
 include_directories(${nestor_SOURCE_DIR})
 include_directories(${nestor_SOURCE_DIR}/include)
@@ -85,17 +57,27 @@ else()
 	add_definitions(-DWIN32)
 endif(UNIX)
 
+include_directories(lib/sqlite-amalgamation-3080403)
+add_subdirectory(lib/sqlite-amalgamation-3080403)
+
+add_subdirectory(net)
+add_subdirectory(imap)
+add_subdirectory(rss)
+add_subdirectory(service)
+add_subdirectory(utils)
 
 
 add_library (nestorcom ${NESTOR_LIB_LIST})
 
 add_subdirectory(tests)
 
-include_directories(lib/sqlite-amalgamation-3080403)
-add_subdirectory(lib/sqlite-amalgamation-3080403)
-
 add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} nestorcom
+                                      nestornet
+                                      nestorrss
+                                      nestorimap
+                                      nestorutils
+                                      nestorservice
                                       sqlite3
                                       ${NESTOR_LIB_LINKS})
 
