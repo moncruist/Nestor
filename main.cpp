@@ -58,11 +58,12 @@ using namespace icu;
 static vector<ImapSession *> closedSessions;
 static SocketListener *listener;
 static IOObserver *observer;
+static SqliteConnection *connection;
 
 void startNewConnection(SocketListener *listener, IOObserver *observer) {
 	MAIN_LOG("Starting new conencttion");
 	SocketSingle *con = listener->accept();
-	ImapSession *session = new ImapSession(new Service(), con);
+	ImapSession *session = new ImapSession(new Service(connection), con);
 	auto onRead = [session, con]() {
 	    MAIN_LOG("fd " << con->descriptor()   << "Ready for reading");
 	    session->processData();
@@ -99,6 +100,11 @@ int main(int argc, char *argv[]) {
     config->store();
 
     logger_init(config->logFile());
+    connection = new SqliteConnection(config->sqliteConfig().databasePath());
+    connection->open();
+
+    SqliteProvider prov(connection);
+    prov.createUsersTable();
 
     MAIN_LOG("Starting Nestor server");
 
@@ -132,10 +138,12 @@ int main(int argc, char *argv[]) {
     }
 
     MAIN_LOG("Nestor finished");
+    logger_deinit();
+    connection->close();
 
     delete observer;
     delete listener;
+    delete connection;
 
-    logger_deinit();
     return 0;
 }

@@ -37,10 +37,10 @@ public:
     explicit SqliteConnection(const std::string &fileName);
     virtual ~SqliteConnection();
 
-    void open();
-    void close();
+    virtual void open();
+    virtual void close();
 
-    bool connected() const;
+    virtual bool connected() const;
 
     sqlite3 *handle() const;
 

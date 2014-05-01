@@ -22,7 +22,9 @@
 #define SQLITE_PROVIDER_H_
 
 #include <stdexcept>
+#include <mutex>
 #include "sqlite_connection.h"
+#include "types.h"
 
 namespace nestor {
 namespace service {
@@ -33,11 +35,27 @@ class SqliteProviderException : public std::runtime_error {
 
 class SqliteProvider {
 public:
-    SqliteProvider(SqliteConnection *connection);
+    SqliteProvider(const SqliteConnection *connection);
     virtual ~SqliteProvider();
 
+    void prepareStatements();
+
+    void createUsersTable();
+    User *findUserByName(const std::string &username);
+
 private:
-    SqliteConnection *connection_;
+    enum Statements {
+        STATEMENT_CREATE_USER_TABLE = 0,
+        STATEMENT_FIND_USER_BY_USERNAME,
+        STATEMENTS_LENGTH
+    };
+    static const char *SQL_STATEMENTS[STATEMENTS_LENGTH];
+
+private:
+    const SqliteConnection *connection_;
+    sqlite3_stmt *compiledStatements_[STATEMENTS_LENGTH];
+
+    std::recursive_mutex lock_;
 };
 
 } /* namespace service */

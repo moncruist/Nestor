@@ -22,6 +22,8 @@
 #define SERVICE_H_
 
 #include <string>
+#include "sqlite_connection.h"
+#include "sqlite_provider.h"
 
 namespace nestor {
 namespace service {
@@ -31,12 +33,16 @@ namespace service {
  */
 class Service {
 public:
-    Service();
+    Service(const SqliteConnection *connection);
     virtual ~Service();
 
-    bool authenticate(std::string login, std::string password);
+    virtual bool authenticate(std::string login, std::string password);
 
-    void onLogout();
+    virtual void onLogout();
+
+private:
+    const SqliteConnection *connection_;
+    SqliteProvider *dataProvider_;
 };
 
 } /* namespace service */

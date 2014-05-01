@@ -79,6 +79,7 @@ target_link_libraries(${PROJECT_NAME} nestorcom
                                       nestorutils
                                       nestorservice
                                       sqlite3
+                                      dl
                                       ${NESTOR_LIB_LINKS})
 
 enable_testing()                                      

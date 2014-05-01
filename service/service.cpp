@@ -19,21 +19,38 @@
  *  along with this program.  If not, see {http://www.gnu.org/licenses/}.
  */
 #include "service.h"
+#include "logger.h"
 
 namespace nestor {
 namespace service {
 
-Service::Service() {
-    // TODO Auto-generated constructor stub
-
+Service::Service(const SqliteConnection *connection)
+        : connection_(connection) {
+    dataProvider_ = new SqliteProvider(connection);
+    dataProvider_->prepareStatements();
 }
 
 Service::~Service() {
-    // TODO Auto-generated destructor stub
+    delete dataProvider_;
 }
 
 bool Service::authenticate(std::string login, std::string password) {
-    return true;
+    User *usr;
+    try {
+        usr = dataProvider_->findUserByName(login);
+    } catch (SqliteProviderException &) {
+        SERVICE_LOG_LVL(ERROR, "Service::authenticate: cannot find user");
+        return false;
+    }
+
+    bool result;
+    if (!usr || usr->password != password)
+        result = false;
+    else
+        result = true;
+
+    delete usr;
+    return result;
 }
 
 void Service::onLogout() {

@@ -89,9 +89,38 @@ public:
 
 };
 
+class DummySqliteConnection : public SqliteConnection {
+public:
+    explicit DummySqliteConnection() : SqliteConnection("") {}
+    virtual ~DummySqliteConnection() {}
+
+    virtual void open() {}
+    virtual void close() {}
+
+    virtual bool connected() const {return true;}
+};
+
+static DummySqliteConnection globalDummyConnection;
+
+class DummyService : public Service {
+public:
+    DummyService() : Service(&globalDummyConnection) {}
+    virtual ~DummyService() {}
+
+    virtual bool authenticate(std::string login, std::string password) {
+        return true;
+    }
+
+    virtual void onLogout() {}
+
+private:
+    const SqliteConnection *connection_;
+    SqliteProvider *dataProvider_;
+};
+
 void ImapSessionTest::setUp(void) {
     sock = new DummySocket();
-    service = new Service();
+    service = new DummyService();
     context = new ImapSession(service, sock);
     context->writeAnswers();
     sock->clearBufs();
@@ -102,7 +131,7 @@ void ImapSessionTest::tearDown(void) {
 }
 
 void ImapSessionTest::testGreeting(void) {
-    Service *service = new Service();
+    Service *service = new DummyService();
     DummySocket *sock = new DummySocket();
     nestor::imap::ImapSession session(service, sock);
     session.writeAnswers();
