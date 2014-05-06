@@ -11,6 +11,7 @@ include_directories(${nestor_SOURCE_DIR}/include)
 
 find_package(ICU REQUIRED)
 find_package(Log4cplus REQUIRED)
+find_package(Threads REQUIRED)
 
 if(NOT ICU_FOUND)
 	message(SEND_ERROR "Cannot find icu library")
@@ -43,13 +44,16 @@ else()
 	include_directories(${LIBCONFIG++_INCLUDE_DIR})
 endif()
 
-set(NESTOR_LIB_LINKS  ${ICU_LIBRARIES}
+set(NESTOR_LIB_LINKS  sqlite3
+                      dl
+                      ${ICU_LIBRARIES}
 	                  ${ICU_DATA_LIBRARIES}
 	                  ${ICU_IO_LIBRARIES}
 	                  ${ICU_I18N_LIBRARIES}
 	                  ${TINYXML2_LIBRARY}
 	                  ${LOG4CPLUS_LIBRARIES}
-	                  ${LIBCONFIG++_LIBRARY})
+	                  ${LIBCONFIG++_LIBRARY}
+	                  ${CMAKE_THREAD_LIBS_INIT})
 
 if(UNIX)
 	add_definitions(-DUNIX)
@@ -63,8 +67,9 @@ add_subdirectory(lib/sqlite-amalgamation-3080403)
 add_subdirectory(net)
 add_subdirectory(imap)
 add_subdirectory(rss)
-add_subdirectory(service)
 add_subdirectory(utils)
+add_subdirectory(service)
+
 
 
 add_library (nestorcom ${NESTOR_LIB_LIST})
@@ -76,10 +81,8 @@ target_link_libraries(${PROJECT_NAME} nestorcom
                                       nestornet
                                       nestorrss
                                       nestorimap
-                                      nestorutils
                                       nestorservice
-                                      sqlite3
-                                      dl
+                                      nestorutils
                                       ${NESTOR_LIB_LINKS})
 
 enable_testing()                                      

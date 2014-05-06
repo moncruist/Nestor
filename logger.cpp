@@ -25,7 +25,6 @@
 #include <string>
 #include <ios>
 #include <log4cplus/helpers/property.h>
-#include <log4cplus/asyncappender.h>
 #include <log4cplus/fileappender.h>
 #include "logger.h"
 

@@ -42,11 +42,26 @@ public:
 
     void createUsersTable();
     User *findUserByName(const std::string &username);
+    User *findUserById(int64_t id);
+
+    void createChannelsTable();
+    Channel *findChannelById(int64_t id);
+private:
+    sqlite3_stmt *getStatement(int statementCode);
+    void checkSqliteResult(int retCode, const std::string &tag);
+    void parseUserRow(sqlite3_stmt *stmt, User &out);
+    void parseChannelRow(sqlite3_stmt *stmt, Channel &out);
 
 private:
     enum Statements {
+        // USER table -----------------
         STATEMENT_CREATE_USER_TABLE = 0,
         STATEMENT_FIND_USER_BY_USERNAME,
+        STATEMENT_FIND_USER_BY_ID,
+
+        // CHANNEL table --------------
+        STATEMENT_CREATE_CHANNEL_TABLE,
+        STATEMENT_FIND_CHANNEL_BY_ID,
         STATEMENTS_LENGTH
     };
     static const char *SQL_STATEMENTS[STATEMENTS_LENGTH];

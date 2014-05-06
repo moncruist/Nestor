@@ -44,7 +44,7 @@ bool Service::authenticate(std::string login, std::string password) {
     }
 
     bool result;
-    if (!usr || usr->password != password)
+    if (!usr || usr->password() != password)
         result = false;
     else
         result = true;

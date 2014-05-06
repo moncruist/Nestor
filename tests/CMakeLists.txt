@@ -17,9 +17,7 @@ target_link_libraries(nestor_tests nestorcom
                                    nestornet
                                    nestorrss
                                    nestorimap
-                                   nestorutils
-                                   nestorservice 
-                                   sqlite3
-                                   dl
+                                   nestorservice
+                                   nestorutils 
                                    ${NESTOR_LIB_LINKS} 
                                    ${CPPUNIT_LIBRARY})
