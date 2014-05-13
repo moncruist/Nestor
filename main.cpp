@@ -103,8 +103,12 @@ int main(int argc, char *argv[]) {
     connection = new SqliteConnection(config->sqliteConfig().databasePath());
     connection->open();
 
+    MAIN_LOG("Checking Nestor database");
     SqliteProvider prov(connection);
     prov.createUsersTable();
+    prov.createChannelsTable();
+    prov.createFeedsTable();
+    prov.createSubsriptionTable();
 
     MAIN_LOG("Starting Nestor server");
 
