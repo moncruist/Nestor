@@ -7,7 +7,8 @@
 namespace nestor {
 namespace utils {
 
-std::tm timestampConvert(const std::string &timestamp, const std::string &format);
+std::tm stringToTimestamp(const std::string &timestamp, const std::string &format);
+std::string timestampToString(const std::tm &timestamp, const std::string &format);
 
 }
 }
