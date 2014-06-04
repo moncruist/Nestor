@@ -130,6 +130,7 @@ size_t HttpClient::writeFuncHelper(void* ptr, size_t size, size_t nmemb, void* u
 HttpClient::~HttpClient() {
     if (recvBuffer_)
         delete[] recvBuffer_;
+    curl_easy_cleanup(handle_);
 }
 
 } /* namespace net */
