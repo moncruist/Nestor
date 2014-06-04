@@ -26,7 +26,6 @@ namespace nestor {
 namespace net {
 
 HttpResource::HttpResource() :
-    encoding_(""),
     server_(""),
     codeDefinition_(""),
     contentType_(""),
@@ -56,14 +55,6 @@ unsigned int HttpResource::contentLength() const {
 
 void HttpResource::setContentLength(unsigned int contentLength) {
     contentLength_ = contentLength;
-}
-
-const string& HttpResource::encoding() const {
-    return encoding_;
-}
-
-void HttpResource::setEncoding(const string& encoding) {
-    encoding_ = encoding;
 }
 
 const string& HttpResource::server() const {

@@ -36,8 +36,7 @@ public:
     void setCode(unsigned int code);
     unsigned int contentLength() const;
     void setContentLength(unsigned int contentLength);
-    const std::string& encoding() const;
-    void setEncoding(const std::string& encoding);
+
     const std::string& server() const;
     void setServer(const std::string& server);
     const std::string& codeDefinition() const;
@@ -50,7 +49,6 @@ public:
     void setContent(unsigned char* content);
 
 private:
-    std::string encoding_;
     std::string server_;
     std::string codeDefinition_;
     std::string contentType_;

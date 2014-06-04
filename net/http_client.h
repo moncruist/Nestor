@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <vector>
 #include <netdb.h>
+#include <curl/curl.h>
 #include "http_resource.h"
 #include "socket_single.h"
 
@@ -34,16 +35,20 @@ namespace net {
 
 class HttpClient {
 public:
-    HttpClient(std::string host = "localhost")
-            throw (std::runtime_error);
+    HttpClient(std::string host = "localhost");
 
-    HttpResource *getResource(const std::string &resource)
-        throw(std::runtime_error);
+    HttpResource *getResource(const std::string &resource);
 
     virtual ~HttpClient();
+
 private:
-    SocketSingle *sock_;
+    static size_t writeFuncHelper( void* ptr, size_t size, size_t nmemb, void* userdata);
+
+private:
+    CURL *handle_;
     std::string host_;
+    unsigned char *recvBuffer_;
+    size_t recvBufferSize_;
 };
 
 } /* namespace net */

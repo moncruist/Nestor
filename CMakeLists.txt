@@ -44,6 +44,14 @@ else()
 	include_directories(${LIBCONFIG++_INCLUDE_DIR})
 endif()
 
+find_package(LibCurl REQUIRED)
+if(NOT LIBCURL_FOUND)
+	message(SEND_ERROR "Cannot find LibCurl library")
+	return()
+else()
+	include_directories(${LIBCURL_INCLUDE_DIR})
+endif()
+
 set(NESTOR_LIB_LINKS  sqlite3
                       dl
                       ${ICU_LIBRARIES}
@@ -53,6 +61,7 @@ set(NESTOR_LIB_LINKS  sqlite3
 	                  ${TINYXML2_LIBRARY}
 	                  ${LOG4CPLUS_LIBRARIES}
 	                  ${LIBCONFIG++_LIBRARY}
+                          ${LIBCURL_LIBRARY}
 	                  ${CMAKE_THREAD_LIBS_INIT})
 
 if(UNIX)

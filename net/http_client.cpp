@@ -24,38 +24,112 @@
 #include <sstream>
 #include <cstring>
 
-
+#include <curl/curl.h>
+#include "logger.h"
 #include "http_response_parser.h"
+#include "utils/string.h"
 
 using namespace std;
+using namespace nestor::utils;
 
 namespace nestor {
 namespace net {
 
+
 HttpClient::HttpClient(string host)
-        throw (runtime_error)
-        : sock_(nullptr), host_(host) {
-    sock_ = new SocketSingle(host, 80);
+        : host_(host), recvBuffer_(nullptr), recvBufferSize_(0) {
+    handle_ = curl_easy_init();
+    if (handle_ == nullptr)
+        throw runtime_error("HttpClient: cannot initialize curl handle");
 }
 
-HttpResource * HttpClient::getResource(const string &resource)
-        throw(std::runtime_error) {
-    ostringstream requestStr;
-    string *result;
+HttpResource * HttpClient::getResource(const string &resource) {
+    string url = host_ + resource;
+    curl_easy_setopt(handle_, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(handle_, CURLOPT_WRITEFUNCTION, writeFuncHelper);
+    curl_easy_setopt(handle_, CURLOPT_WRITEDATA, this);
 
-    requestStr << "GET " << resource << " HTTP/1.1\r\nHost: " << host_ << "\r\n\r\n";
-    string str = requestStr.str();
-    sock_->write(requestStr.str());
+    int resultCode = curl_easy_perform(handle_);
 
-    result = new string(sock_->readAll());
+    if (resultCode != CURLE_OK) {
+        ostringstream ossErr;
+        ossErr << "HttpClient::getResource: receive failed. Curl code: " << resultCode
+                << "; Description: " << curl_easy_strerror((CURLcode)resultCode);
+        NET_LOG_LVL(ERROR, ossErr.str());
+        throw runtime_error(ossErr.str());
+    }
 
-    HttpResource *res = HttpResponseParser::parseRawData(*result);
-    delete result;
+    HttpResource *res = new HttpResource();
+
+    // moving recvBuffer_ to res
+    res->setContent(recvBuffer_);
+    res->setContentLength(recvBufferSize_);
+    recvBuffer_ = nullptr;
+    recvBufferSize_ = 0;
+
+    long respCode;
+    curl_easy_getinfo(handle_, CURLINFO_RESPONSE_CODE, &respCode);
+    res->setCode(respCode);
+
+    char *contentType;
+    curl_easy_getinfo(handle_, CURLINFO_CONTENT_TYPE, &contentType);
+    if (contentType != nullptr) {
+        string type = contentType;
+
+        vector<string> typeParts, params;
+        split(type, ";", typeParts);
+        int typePartsSize = typeParts.size();
+
+        res->setContentType(typeParts[0]);
+
+        if (typePartsSize > 1) {
+            for (int i = 1; i < typePartsSize; i++) {
+                split(typeParts[i], "=", params);
+                if (params.size() != 2) continue;
+
+                if (stringToLowerCopy(trim(params[0])) == "charset") {
+                    res->setContentCharset(stringToLowerCopy(trim(params[1])));
+                }
+            }
+        }
+    } else {
+        res->setContentType("");
+        res->setContentCharset("");
+    }
+
     return res;
 }
 
+size_t HttpClient::writeFuncHelper(void* ptr, size_t size, size_t nmemb, void* userdata) {
+    HttpClient *obj = static_cast<HttpClient *>(userdata);
+    size_t startPos = 0;
+    size_t totalBytes = size * nmemb;
+
+    if (totalBytes == 0) return 0;
+
+    if (obj->recvBuffer_ == nullptr) {
+        // allocating new buffer
+        obj->recvBuffer_ = new unsigned char[totalBytes];
+        obj->recvBufferSize_ = size * nmemb;
+    } else {
+        // rellocating buffer with bigger size
+        unsigned char *newRecvBuffer = new unsigned char [obj->recvBufferSize_ + totalBytes];
+        memcpy(newRecvBuffer, obj->recvBuffer_, obj->recvBufferSize_);
+        delete[] obj->recvBuffer_;
+        obj->recvBuffer_ = newRecvBuffer;
+
+        startPos = obj->recvBufferSize_;
+        obj->recvBufferSize_ += totalBytes;
+    }
+
+    memcpy(&obj->recvBuffer_[startPos], ptr, totalBytes);
+    return totalBytes;
+}
+
+
 HttpClient::~HttpClient() {
-    if (sock_) sock_->close();
+    if (recvBuffer_)
+        delete[] recvBuffer_;
 }
 
 } /* namespace net */

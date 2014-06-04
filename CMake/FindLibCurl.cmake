@@ -1,0 +1,10 @@
+# Finds libcurl library
+find_path(LIBCURL_INCLUDE_DIR curl/curl.h)
+find_library(LIBCURL_LIBRARY curl)
+if (LIBCURL_INCLUDE_DIR AND LIBCURL_LIBRARY)
+   set(LIBCURL_FOUND TRUE)
+   message(STATUS "Found LibCurl: ${LIBCURL_LIBRARY}")
+else()
+   set(LIBCURL_FOUND FALSE)
+   message(FATAL_ERROR "Could not find LibCurl")
+endif (LIBCURL_INCLUDE_DIR AND LIBCURL_LIBRARY)
