@@ -52,6 +52,15 @@ else()
 	include_directories(${LIBCURL_INCLUDE_DIR})
 endif()
 
+find_package(LibEv REQUIRED)
+if(NOT LIBEV_FOUND)
+	message(SEND_ERROR "Cannot find libev library")
+	return()
+else()
+	include_directories(${LIBEV_INCLUDE_DIR})
+endif()
+
+
 set(NESTOR_LIB_LINKS  sqlite3
                       dl
                       ${ICU_LIBRARIES}
@@ -61,8 +70,9 @@ set(NESTOR_LIB_LINKS  sqlite3
 	                  ${TINYXML2_LIBRARY}
 	                  ${LOG4CPLUS_LIBRARIES}
 	                  ${LIBCONFIG++_LIBRARY}
-                          ${LIBCURL_LIBRARY}
-	                  ${CMAKE_THREAD_LIBS_INIT})
+                      ${LIBCURL_LIBRARY}
+	                  ${CMAKE_THREAD_LIBS_INIT}
+	                  ${LIBEV_LIBRARY})
 
 if(UNIX)
 	add_definitions(-DUNIX)

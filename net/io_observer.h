@@ -25,15 +25,10 @@
 #include <functional>
 #include <stdexcept>
 
+#include <ev++.h>
+
 namespace nestor {
 namespace net {
-
-struct IOObserverCallbacks {
-    std::function<void (void)> readCallback;
-    std::function<void (void)> writeCallback;
-    std::function<void (void)> errorCallback;
-};
-
 
 /**
  * IOObserver class is used for waiting events on specified descritptors.
@@ -42,34 +37,45 @@ struct IOObserverCallbacks {
  */
 class IOObserver {
 public:
-    typedef std::function<void(void)> callbackFunction;
-    IOObserver(unsigned int timeoutMs = 1000,
-            std::function<void(void)> onTimeout = nullptr) throw (std::runtime_error);
+    typedef std::function<void(int)> callbackFunction;
+    IOObserver();
     virtual ~IOObserver();
 
-    void append(int fd, callbackFunction readCallback = nullptr,
-            callbackFunction writeCallback = nullptr,
-            callbackFunction errorCallback = nullptr);
+    void append(int fd, unsigned int timeoutMs,
+            callbackFunction readCallback,
+            callbackFunction writeCallback,
+            callbackFunction timeoutCallback);
     void remove(int fd);
-
-    unsigned int timeout() const;
-
-
-    void setTimeoutCallback(std::function<void(void)> callback);
 
     /**
      * Blocks execution for waiting some events
      */
-    int wait();
+    void wait();
 
-    int itemsCount() const;
+    void breakLoop();
+
+    int objectListenCount() const;
 
 private:
-    std::function<void (void)> timeoutCallback_;
-    std::map<int, IOObserverCallbacks> items_;
+    void eventCallbackWrapper(ev::io &e, int revents);
+    void timeoutCallbackWrapper(ev::timer &t, int revents);
 
-    unsigned int timeoutMs_;
-    int efd_;
+    ev::io *findObjectByFd(int fd);
+
+private:
+    struct IOObserverCallbacks {
+        callbackFunction readCallback;
+        callbackFunction writeCallback;
+        callbackFunction timeoutCallback;
+    };
+
+    std::map<int, IOObserverCallbacks> eventCallbacks_;
+    std::map<ev::io *, int> eventObjects_;
+    std::map<ev::timer *, int> eventTimers_;
+    std::map<int, ev::timer *> fdTimers_;
+    std::map<int, unsigned int> eventTimeoutsMs_;
+
+    ev::dynamic_loop *loop_;
 };
 
 } /* namespace net */
