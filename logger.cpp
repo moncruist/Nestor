@@ -39,13 +39,15 @@ void logger_init(const string &logFile) {
 
     Logger log = Logger::getRoot();
     SharedAppenderPtr logout = log.getAppender(LOG4CPLUS_TEXT("STDOUT"));
-    PatternLayout *layout = new PatternLayout(LOG4CPLUS_TEXT("%d{%d.%m.%Y %H:%M:%S:%q} %-5p [%T]: %m %n"));
+    PatternLayout *layout = new PatternLayout(LOG4CPLUS_TEXT("%d{%d.%m.%Y %H:%M:%S:%q} %-5p [%T] [%c]: %m %n"));
     logout->setLayout(auto_ptr<Layout>(layout));
+    logout->setThreshold(DEBUG_LOG_LEVEL);
 
     FileAppender *fileAppender = new FileAppender(logFile, ios_base::app, false);
     fileAppender->setName(LOG4CPLUS_TEXT("FILEOUT"));
-    PatternLayout *fileLayout = new PatternLayout(LOG4CPLUS_TEXT("%d{%d.%m.%Y %H:%M:%S:%q} %-5p [%T]: %m %n"));
+    PatternLayout *fileLayout = new PatternLayout(LOG4CPLUS_TEXT("%d{%d.%m.%Y %H:%M:%S:%q} %-5p [%T] [%c]: %m %n"));
     fileAppender->setLayout(auto_ptr<Layout>(fileLayout));
+    fileAppender->setThreshold(INFO_LOG_LEVEL);
     log.addAppender(SharedAppenderPtr(fileAppender));
 }
 
