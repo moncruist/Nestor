@@ -28,6 +28,7 @@ namespace service {
 
 SqliteConnection::SqliteConnection(const std::string &fileName)
         : fileName_(fileName), handle_(nullptr), connected_(false) {
+    onCloseCallbacks_.clear();
 }
 
 SqliteConnection::~SqliteConnection() {
@@ -51,6 +52,8 @@ void SqliteConnection::open() {
 
 void SqliteConnection::close() {
     if (handle_) {
+        for (auto callback: onCloseCallbacks_)
+            callback(this);
         int code = sqlite3_close(handle_);
         handle_ = nullptr;
         connected_ = false;
@@ -82,5 +85,12 @@ void SqliteConnection::setFileName(const std::string& fileName) {
     fileName_ = fileName;
 }
 
+int SqliteConnection::subscribeOnClose(SqliteConnectionCallback callback) {
+    onCloseCallbacks_.push_back(callback);
+    return onCloseCallbacks_.size() - 1;
+}
+
 } /* namespace service */
 } /* namespace nestor */
+
+

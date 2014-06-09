@@ -92,6 +92,10 @@ ImapSession::ImapSession(service::Service *service, net::SocketSingle *socket)
 
 ImapSession::~ImapSession() {
     switchState(ImapSessionState::EXIT);
+    if (service_)
+        delete service_;
+    if (socket_)
+        delete socket_;
 }
 
 const net::SocketSingle* ImapSession::socket() const {

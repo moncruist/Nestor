@@ -23,6 +23,8 @@
 
 #include <string>
 #include <stdexcept>
+#include <functional>
+#include <vector>
 #include "sqlite3.h"
 
 namespace nestor {
@@ -34,6 +36,8 @@ class SqliteConnectionException : public std::runtime_error {
 
 class SqliteConnection {
 public:
+    typedef std::function<void (SqliteConnection *)> SqliteConnectionCallback;
+
     explicit SqliteConnection(const std::string &fileName);
     virtual ~SqliteConnection();
 
@@ -41,6 +45,8 @@ public:
     virtual void close();
 
     virtual bool connected() const;
+
+    int subscribeOnClose(SqliteConnectionCallback callback);
 
     sqlite3 *handle() const;
 
@@ -51,6 +57,8 @@ private:
     std::string fileName_;
     sqlite3 *handle_;
     bool connected_;
+
+    std::vector<SqliteConnectionCallback> onCloseCallbacks_;
 };
 
 } /* namespace service */

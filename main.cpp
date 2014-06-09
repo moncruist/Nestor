@@ -64,21 +64,19 @@ void startNewConnection(SocketListener *listener, IOObserver *observer) {
 	MAIN_LOG("Starting new conencttion");
 	SocketSingle *con = listener->accept();
 	ImapSession *session = new ImapSession(new Service(connection), con);
-	auto onRead = [session, con]() {
-	    MAIN_LOG("fd " << con->descriptor()   << "Ready for reading");
+	auto onRead = [session, con](int fd) {
+	    MAIN_LOG("fd " << fd   << "Ready for reading");
 	    session->processData();
+	    session->writeAnswers();
 	};
 
-	auto onWrite = [session, con]() {
-	    MAIN_LOG("fd " << con->descriptor()   << "Ready for writing");
-        session->writeAnswers();
-    };
-	observer->append(con->descriptor(), onRead, onWrite);
+	observer->append(con->descriptor(), 0, onRead, nullptr, nullptr);
 	con->setOnCloseCallback([observer](SocketSingle *s) {
 	    observer->remove(s->descriptor());
 	});
 
 	session->setOnExitCallback([](ImapSession *s) { closedSessions.push_back(s); });
+	session->writeAnswers();
 }
 
 void onSigInt(int sig) {
@@ -87,8 +85,19 @@ void onSigInt(int sig) {
 
         observer->remove(listener->descriptor());
         listener->close();
+        observer->breakLoop();
     }
 }
+
+void checkDatabase(SqliteConnection *connection) {
+    MAIN_LOG("Checking Nestor database");
+    SqliteProvider prov(connection);
+    prov.createUsersTable();
+    prov.createChannelsTable();
+    prov.createFeedsTable();
+    prov.createSubsriptionTable();
+}
+
 
 int main(int argc, char *argv[]) {
     ostringstream oss;
@@ -103,12 +112,7 @@ int main(int argc, char *argv[]) {
     connection = new SqliteConnection(config->sqliteConfig().databasePath());
     connection->open();
 
-    MAIN_LOG("Checking Nestor database");
-    SqliteProvider prov(connection);
-    prov.createUsersTable();
-    prov.createChannelsTable();
-    prov.createFeedsTable();
-    prov.createSubsriptionTable();
+    checkDatabase(connection);
 
     MAIN_LOG("Starting Nestor server");
 
@@ -121,9 +125,9 @@ int main(int argc, char *argv[]) {
     	return -1;
     }
 
-    observer = new IOObserver(10000 /* 10 seconds */, []() { MAIN_LOG("No data"); });
+    observer = new IOObserver();
 
-    observer->append(listener->descriptor(), bind(startNewConnection, listener, observer));
+    observer->append(listener->descriptor(), 0, bind(startNewConnection, listener, observer), nullptr, nullptr);
 
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
@@ -131,7 +135,7 @@ int main(int argc, char *argv[]) {
     sigaction(SIGINT, &sa, NULL);
 
     MAIN_LOG("Nestor started");
-    while(observer->itemsCount() > 0) {
+    while(observer->objectListenCount() > 0) {
     	observer->wait();
 
     	if (closedSessions.size() > 0) {
@@ -142,8 +146,9 @@ int main(int argc, char *argv[]) {
     }
 
     MAIN_LOG("Nestor finished");
-    logger_deinit();
+
     connection->close();
+    logger_deinit();
 
     delete observer;
     delete listener;

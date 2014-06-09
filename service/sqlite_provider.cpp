@@ -198,6 +198,7 @@ SqliteProvider::SqliteProvider(const SqliteConnection *connection)
 }
 
 SqliteProvider::~SqliteProvider() {
+    SERVICE_LOG("SqliteProvider::~SqliteProvider: clearing statements");
     for (int i = 0; i < STATEMENTS_LENGTH; i++) {
         if (compiledStatements_[i]) {
             sqlite3_finalize(compiledStatements_[i]);

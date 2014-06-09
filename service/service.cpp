@@ -31,6 +31,7 @@ Service::Service(const SqliteConnection *connection)
 }
 
 Service::~Service() {
+    SERVICE_LOG("Service::~Service: clearing provider");
     delete dataProvider_;
 }
 
