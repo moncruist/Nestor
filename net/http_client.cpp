@@ -39,16 +39,30 @@ namespace net {
 HttpClient::HttpClient(string host)
         : host_(host), recvBuffer_(nullptr), recvBufferSize_(0) {
     handle_ = curl_easy_init();
-    if (handle_ == nullptr)
-        throw runtime_error("HttpClient: cannot initialize curl handle");
+    if (handle_ == nullptr) {
+        string errmsg = "HttpClient::HttpClient: cannot initialize curl handle";
+        NET_LOG_LVL(ERROR, errmsg);
+        throw runtime_error(errmsg);
+    }
 }
 
 HttpResource * HttpClient::getResource(const string &resource) {
+    setup(resource);
+
+    if (!perform())
+        return nullptr;
+
+    return parseReceivedData();
+}
+
+void HttpClient::setup(const std::string &resource) {
     string url = host_ + resource;
     curl_easy_setopt(handle_, CURLOPT_URL, url.c_str());
     curl_easy_setopt(handle_, CURLOPT_WRITEFUNCTION, writeFuncHelper);
     curl_easy_setopt(handle_, CURLOPT_WRITEDATA, this);
+}
 
+bool HttpClient::perform() {
     int resultCode = curl_easy_perform(handle_);
 
     if (resultCode != CURLE_OK) {
@@ -56,8 +70,19 @@ HttpResource * HttpClient::getResource(const string &resource) {
         ossErr << "HttpClient::getResource: receive failed. Curl code: " << resultCode
                 << "; Description: " << curl_easy_strerror((CURLcode)resultCode);
         NET_LOG_LVL(ERROR, ossErr.str());
-        throw runtime_error(ossErr.str());
+        return false;
     }
+
+    return true;
+}
+
+CURL* HttpClient::handle() const {
+    return handle_;
+}
+
+HttpResource* HttpClient::parseReceivedData() {
+    if (recvBuffer_ == nullptr)
+        return nullptr;
 
     HttpResource *res = new HttpResource();
 

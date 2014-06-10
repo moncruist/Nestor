@@ -38,6 +38,10 @@ public:
     HttpClient(std::string host = "localhost");
 
     HttpResource *getResource(const std::string &resource);
+    void setup(const std::string &resource);
+    bool perform();
+    CURL *handle() const;
+    HttpResource *parseReceivedData();
 
     virtual ~HttpClient();
 
