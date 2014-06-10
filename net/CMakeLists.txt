@@ -13,6 +13,8 @@ set(NESTOR_NET_SOURCE
              http_response_parser.h
              io_observer.cpp
              io_observer.h
+             http_multi_client.cpp
+             http_multi_client.h
 )
              
 add_library (nestornet ${NESTOR_NET_SOURCE})
