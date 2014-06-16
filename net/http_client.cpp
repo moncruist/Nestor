@@ -36,8 +36,8 @@ namespace nestor {
 namespace net {
 
 
-HttpClient::HttpClient(string host)
-        : host_(host), recvBuffer_(nullptr), recvBufferSize_(0) {
+HttpClient::HttpClient()
+        : recvBuffer_(nullptr), recvBufferSize_(0) {
     handle_ = curl_easy_init();
     if (handle_ == nullptr) {
         string errmsg = "HttpClient::HttpClient: cannot initialize curl handle";
@@ -56,8 +56,7 @@ HttpResource * HttpClient::getResource(const string &resource) {
 }
 
 void HttpClient::setup(const std::string &resource) {
-    string url = host_ + resource;
-    curl_easy_setopt(handle_, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(handle_, CURLOPT_URL, resource.c_str());
     curl_easy_setopt(handle_, CURLOPT_WRITEFUNCTION, writeFuncHelper);
     curl_easy_setopt(handle_, CURLOPT_WRITEDATA, this);
 }

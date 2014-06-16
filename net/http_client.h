@@ -35,7 +35,7 @@ namespace net {
 
 class HttpClient {
 public:
-    HttpClient(std::string host = "localhost");
+    HttpClient();
 
     HttpResource *getResource(const std::string &resource);
     void setup(const std::string &resource);
@@ -50,7 +50,6 @@ private:
 
 private:
     CURL *handle_;
-    std::string host_;
     unsigned char *recvBuffer_;
     size_t recvBufferSize_;
 };

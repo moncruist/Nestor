@@ -29,9 +29,8 @@ HttpMultiClient::~HttpMultiClient() {
 }
 
 
-void HttpMultiClient::appendRequestResource(const std::string& host,
-                                            const std::string& resource) {
-    HttpClient *client = new HttpClient(host);
+void HttpMultiClient::appendRequestResource(const std::string& resource) {
+    HttpClient *client = new HttpClient();
     client->setup(resource);
     clients_.push_back(client);
 

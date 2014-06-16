@@ -17,7 +17,7 @@ public:
     HttpMultiClient();
     virtual ~HttpMultiClient();
 
-    void appendRequestResource(const std::string &host, const std::string &resource);
+    void appendRequestResource(const std::string &resource);
     std::vector<HttpResource *> *perform();
 
 private:
