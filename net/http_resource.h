@@ -34,6 +34,8 @@ public:
 
     unsigned int code() const;
     void setCode(unsigned int code);
+
+    /* Content-Length HTTP field. */
     unsigned int contentLength() const;
     void setContentLength(unsigned int contentLength);
 
@@ -45,6 +47,8 @@ public:
     void setContentCharset(const std::string& contentCharset);
     const std::string& contentType() const;
     void setContentType(const std::string& contentType);
+
+    /* Zero terminated string. Content with size contentLength() + 1 */
     unsigned char* content() const;
     void setContent(unsigned char* content);
     const std::string& url() const;

@@ -106,8 +106,8 @@ HttpResource* HttpResponseParser::parseRawData(const std::string &data) {
     bindValues(values, *resource);
 
     if (resource->contentLength() > 0) {
-        unsigned char *content = new unsigned char[resource->contentLength()];
-        iss.read(reinterpret_cast<char *>(content), resource->contentLength());
+        unsigned char *content = new unsigned char[resource->contentLength() + 1];
+        iss.read(reinterpret_cast<char *>(content), resource->contentLength() + 1);
         resource->setContent(content);
     }
 
