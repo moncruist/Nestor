@@ -47,6 +47,8 @@ public:
     void setContentType(const std::string& contentType);
     unsigned char* content() const;
     void setContent(unsigned char* content);
+    const std::string& url() const;
+    void setUrl(const std::string& url);
 
 private:
     std::string server_;
@@ -57,6 +59,8 @@ private:
     unsigned int contentLength_;
 
     unsigned char *content_;
+
+    std::string url_;
 };
 
 } /* namespace net */

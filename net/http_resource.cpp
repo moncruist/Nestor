@@ -31,7 +31,8 @@ HttpResource::HttpResource() :
     contentType_(""),
     contentCharset_(""),
     code_(0), contentLength_(0),
-    content_(nullptr) {
+    content_(nullptr),
+    url_("") {
 
 }
 
@@ -95,6 +96,14 @@ unsigned char* HttpResource::content() const {
 
 void HttpResource::setContent(unsigned char* content) {
     content_ = content;
+}
+
+const std::string& HttpResource::url() const {
+    return url_;
+}
+
+void HttpResource::setUrl(const std::string& url) {
+    url_ = url;
 }
 
 } /* namespace net */
