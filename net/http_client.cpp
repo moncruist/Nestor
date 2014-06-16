@@ -121,6 +121,14 @@ HttpResource* HttpClient::parseReceivedData() {
         res->setContentCharset("");
     }
 
+    char *url;
+    curl_easy_getinfo(handle_, CURLINFO_EFFECTIVE_URL, &url);
+    if (url != nullptr) {
+        res->setUrl(url);
+    } else {
+        res->setUrl("");
+    }
+
     return res;
 }
 
