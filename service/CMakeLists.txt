@@ -11,6 +11,8 @@ set(NESTOR_SERVICE_SOURCE
              sqlite_connection.h
              types.cpp
              types.h
+             channels_update_worker.cpp
+             channels_update_worker.h
 )
              
 add_library (nestorservice ${NESTOR_SERVICE_SOURCE})
