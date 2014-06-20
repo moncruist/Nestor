@@ -52,6 +52,7 @@ private:
     CURL *handle_;
     unsigned char *recvBuffer_;
     size_t recvBufferSize_;
+    std::string resource_;
 };
 
 } /* namespace net */

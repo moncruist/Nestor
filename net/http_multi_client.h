@@ -5,6 +5,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include <map>
 #include "http_resource.h"
 #include "http_client.h"
 
@@ -23,6 +24,7 @@ public:
 private:
     CURLM *multiHandle_;
     std::vector<HttpClient *> clients_;
+    std::map<HttpClient *, std::string> clientResources_;
     int runningStatus_;
     bool finished_;
 };

@@ -25,6 +25,7 @@ HttpMultiClient::~HttpMultiClient() {
         delete c;
     }
     clients_.clear();
+    clientResources_.clear();
     curl_multi_cleanup(multiHandle_);
 }
 
@@ -35,6 +36,7 @@ void HttpMultiClient::appendRequestResource(const std::string& resource) {
     clients_.push_back(client);
 
     curl_multi_add_handle(multiHandle_, client->handle());
+    clientResources_.insert(make_pair(client, resource));
 }
 
 std::vector<HttpResource*>* HttpMultiClient::perform() {
@@ -67,6 +69,7 @@ std::vector<HttpResource*>* HttpMultiClient::perform() {
                 }
 
                 HttpResource *res = doneClient->parseReceivedData();
+                res->setRequestUrl(clientResources_[doneClient]);
                 resources->push_back(res);
             }
         }

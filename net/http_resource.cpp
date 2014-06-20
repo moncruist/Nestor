@@ -32,7 +32,8 @@ HttpResource::HttpResource() :
     contentCharset_(""),
     code_(0), contentLength_(0),
     content_(nullptr),
-    url_("") {
+    url_(""),
+    requestUrl_("") {
 
 }
 
@@ -104,6 +105,14 @@ const std::string& HttpResource::url() const {
 
 void HttpResource::setUrl(const std::string& url) {
     url_ = url;
+}
+
+const std::string& HttpResource::requestUrl() const {
+    return requestUrl_;
+}
+
+void HttpResource::setRequestUrl(const std::string& requestUrl) {
+    requestUrl_ = requestUrl;
 }
 
 } /* namespace net */
