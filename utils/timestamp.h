@@ -10,6 +10,9 @@ namespace utils {
 std::tm stringToTimestamp(const std::string &timestamp, const std::string &format);
 std::string timestampToString(const std::tm &timestamp, const std::string &format);
 
+std::tm RFC822ToTimestamp(const std::string &timestamp);
+std::string timestampToRFC822(const std::tm &timestamp);
+
 }
 }
 
