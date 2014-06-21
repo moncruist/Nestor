@@ -29,19 +29,19 @@ namespace nestor {
 namespace rss {
 
 RssObject::RssObject() :
-    caption_(""), text_(""), link_(""), guid_("") {
+    title_(""), text_(""), link_(""), guid_("") {
     memset(&pubDate_, 0, sizeof(tm));
 }
 
 RssObject::~RssObject() {
 }
 
-const icu::UnicodeString& RssObject::caption() const {
-    return caption_;
+const icu::UnicodeString& RssObject::title() const {
+    return title_;
 }
 
-void RssObject::setCaption(const icu::UnicodeString& caption) {
-    this->caption_ = caption;
+void RssObject::setTitle(const icu::UnicodeString& caption) {
+    this->title_ = caption;
 }
 
 const icu::UnicodeString& RssObject::text() const {

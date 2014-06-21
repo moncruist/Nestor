@@ -66,7 +66,7 @@ static vector<RssObject *> *parseItems(XMLElement *channel) {
         RssObject *obj = new RssObject();
 
         try {
-            obj->setCaption(UnicodeString(getExpectedElement(rssItem, RssXmlParser::TITLE_ITEM)->GetText()));
+            obj->setTitle(UnicodeString(getExpectedElement(rssItem, RssXmlParser::TITLE_ITEM)->GetText()));
             obj->setLink(UnicodeString(getExpectedElement(rssItem, RssXmlParser::LINK_ITEM)->GetText()));
             obj->setText(UnicodeString(getExpectedElement(rssItem, RssXmlParser::DESCRIPTION_ITEM)->GetText()));
 
