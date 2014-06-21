@@ -117,6 +117,14 @@ public:
     Channel *findChannelById(int64_t id);
 
     /**
+     * Search channel in 'channels' table by channel rss link.
+     * May throw SqliteProviderException.
+     * @param id Identifier of the channel to search.
+     * @return Heap allocated Channel object or null if no channel was found.
+     */
+    Channel *findChannelByRssLink(const std::string &rssLink);
+
+    /**
      * Inserts new channel into the 'channels' table.
      * May throw SqliteProviderException.
      * @param channel Initialized channel object to insert into the table.
@@ -257,6 +265,7 @@ private:
         // CHANNEL table --------------
         STATEMENT_CREATE_CHANNEL_TABLE,
         STATEMENT_FIND_CHANNEL_BY_ID,
+        STATEMENT_FIND_CHANNEL_BY_RSS_LINK,
         STATEMENT_INSERT_NEW_CHANNEL,
         STATEMENT_UPDATE_CHANNEL,
         STATEMENT_DELETE_CHANNEL,

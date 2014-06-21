@@ -80,6 +80,10 @@ const char *SqliteProvider::SQL_STATEMENTS[STATEMENTS_LENGTH] = {
         "SELECT * FROM `channels` WHERE `channel_id` = :channelid;",
         //--------------------------------------------------------
 
+        // --------- STATEMENT_FIND_CHANNEL_BY_RSS_LINK-----------------
+        "SELECT * FROM `channels` WHERE `rss_link` = :rss_link;",
+        //--------------------------------------------------------
+
         // --------- STATEMENT_INSERT_NEW_CHANNEL-----------------
         "INSERT INTO `channels`(`title`, `rss_link`, `link`, `description`,"
         "`update_interval_sec`, `last_update`) "
@@ -227,7 +231,7 @@ User *SqliteProvider::findUserByName(const string& username) {
     lock_guard<recursive_mutex> locker(lock_);
     sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_USER_BY_USERNAME);
     sqlite3_reset(stmt);
-    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, "username"),
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":username"),
                       username.c_str(), -1, SQLITE_STATIC);
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::findUserByName");
@@ -252,7 +256,7 @@ User* SqliteProvider::findUserById(int64_t id) {
     lock_guard<recursive_mutex> locker(lock_);
     sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_USER_BY_ID);
     sqlite3_reset(stmt);
-    sqlite3_bind_int64(stmt, sqlite3_bind_parameter_index(stmt, "userid"), id);
+    sqlite3_bind_int64(stmt, sqlite3_bind_parameter_index(stmt, ":userid"), id);
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::findUserById");
 
@@ -281,12 +285,12 @@ int64_t SqliteProvider::insertUser(const User &user) {
     lock_guard<recursive_mutex> locker(lock_);
     sqlite3_stmt *stmt = getStatement(STATEMENT_INSERT_NEW_USER);
     sqlite3_reset(stmt);
-    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, "username"),
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":username"),
                       user.username().c_str(),
-                      -1, nullptr);
-    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, "password"),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":password"),
                       user.password().c_str(),
-                      -1, nullptr);
+                      -1, SQLITE_TRANSIENT);
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::insertUser");
     int64_t newId = sqlite3_last_insert_rowid(connection_->handle());
@@ -298,13 +302,13 @@ bool SqliteProvider::updateUser(const User &user) {
 
     sqlite3_stmt *stmt = getStatement(STATEMENT_UPDATE_USER);
     sqlite3_reset(stmt);
-    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, "username"),
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":username"),
                       user.username().c_str(),
-                      -1, nullptr);
-    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, "password"),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":password"),
                       user.password().c_str(),
-                      -1, nullptr);
-    sqlite3_bind_int64(stmt, sqlite3_bind_parameter_index(stmt, "userid"),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, sqlite3_bind_parameter_index(stmt, ":userid"),
                        user.id());
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::updateUser");
@@ -319,7 +323,7 @@ void SqliteProvider::deleteUser(const User& user) {
     sqlite3_stmt *stmt = getStatement(STATEMENT_DELETE_USER_CHANNEL);
     sqlite3_reset(stmt);
 
-    int userIdPos         = sqlite3_bind_parameter_index(stmt, "user_id");
+    int userIdPos         = sqlite3_bind_parameter_index(stmt, ":user_id");
 
     sqlite3_bind_int64(stmt, userIdPos, user.id());
     int ret = sqlite3_step(stmt);
@@ -335,7 +339,7 @@ Channel* SqliteProvider::findChannelById(int64_t id) {
     lock_guard<recursive_mutex> locker(lock_);
     sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_CHANNEL_BY_ID);
     sqlite3_reset(stmt);
-    sqlite3_bind_int64(stmt, sqlite3_bind_parameter_index(stmt, "channelid"), id);
+    sqlite3_bind_int64(stmt, sqlite3_bind_parameter_index(stmt, ":channelid"), id);
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::findChannelById");
 
@@ -360,29 +364,64 @@ Channel* SqliteProvider::findChannelById(int64_t id) {
     return channel;
 }
 
+Channel *SqliteProvider::findChannelByRssLink(const std::string &rssLink) {
+    lock_guard<recursive_mutex> locker(lock_);
+    sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_CHANNEL_BY_RSS_LINK);
+    sqlite3_reset(stmt);
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":rss_link"), rssLink.c_str(),
+                      -1, SQLITE_TRANSIENT);
+    int ret = sqlite3_step(stmt);
+    checkSqliteResult(ret, "SqliteProvider::findChannelByRssLink");
+
+    if (ret == SQLITE_DONE) {
+        /* 0 rows was found */
+        return nullptr;
+    }
+
+    Channel *channel = new Channel();
+    try {
+        parseChannelRow(stmt, *channel);
+    } catch (logic_error &e) {
+        SERVICE_LOG_LVL(ERROR, e.what());
+        delete channel;
+        throw SqliteProviderException(e.what());
+    }
+
+    while (ret != SQLITE_DONE) {
+        ret = sqlite3_step(stmt);
+    }
+
+    return channel;
+}
 
 int64_t SqliteProvider::insertChannel(const Channel& channel) {
     lock_guard<recursive_mutex> locker(lock_);
     sqlite3_stmt *stmt = getStatement(STATEMENT_INSERT_NEW_CHANNEL);
     sqlite3_reset(stmt);
-    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, "title"),
-                      channel.title().c_str(),
-                      -1, nullptr);
-    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, "rss_link"),
+    SERVICE_LOG_LVL(DEBUG, "SqliteProvider::insertChannel: title = " << channel.title());
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":title"),
+                           channel.title().c_str(),
+                           -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":rss_link"),
                       channel.rssLink().c_str(),
-                      -1, nullptr);
-    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, "link"),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":link"),
                       channel.link().c_str(),
-                      -1, nullptr);
-    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, "description"),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":description"),
                       channel.description().c_str(),
-                      -1, nullptr);
-    sqlite3_bind_int64(stmt, sqlite3_bind_parameter_index(stmt, "update_interval_sec"),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, sqlite3_bind_parameter_index(stmt, ":update_interval_sec"),
                       channel.updateInterval());
-    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, "last_update"),
+    sqlite3_bind_text(stmt, sqlite3_bind_parameter_index(stmt, ":last_update"),
                       timestampToString(channel.lastUpdate(), SQLITE_DATE_FORMAT_STDLIB_SYNTAX).c_str(),
-                      -1, nullptr);
+                      -1, SQLITE_TRANSIENT);
     int ret = sqlite3_step(stmt);
+    SERVICE_LOG_LVL(DEBUG, "SqliteProvider::insertChannel: result code = " << ret);
+    if (ret != SQLITE_OK) {
+        SERVICE_LOG_LVL(DEBUG, "SqliteProvider::insertChannel: Error. Message:" << sqlite3_errmsg(connection_->handle())
+                        << " SQL: " << sqlite3_sql(stmt));
+    }
     checkSqliteResult(ret, "SqliteProvider::insertChannel");
     int64_t newId = sqlite3_last_insert_rowid(connection_->handle());
     return newId;
@@ -398,23 +437,23 @@ bool SqliteProvider::updateChannel(const Channel &channel) {
     sqlite3_stmt *stmt = getStatement(STATEMENT_UPDATE_CHANNEL);
     sqlite3_reset(stmt);
 
-    channelIdIdx = sqlite3_bind_parameter_index(stmt, "channel_id");
-    titleIdx = sqlite3_bind_parameter_index(stmt, "title");
-    rssLinkIdx = sqlite3_bind_parameter_index(stmt, "rss_link");
-    linkIdx = sqlite3_bind_parameter_index(stmt, "link");
-    descIdx = sqlite3_bind_parameter_index(stmt, "description");
-    updSecIdx = sqlite3_bind_parameter_index(stmt, "update_interval_sec");
-    lastUpdIdx = sqlite3_bind_parameter_index(stmt, "last_update");
+    channelIdIdx = sqlite3_bind_parameter_index(stmt, ":channel_id");
+    titleIdx = sqlite3_bind_parameter_index(stmt, ":title");
+    rssLinkIdx = sqlite3_bind_parameter_index(stmt, ":rss_link");
+    linkIdx = sqlite3_bind_parameter_index(stmt, ":link");
+    descIdx = sqlite3_bind_parameter_index(stmt, ":description");
+    updSecIdx = sqlite3_bind_parameter_index(stmt, ":update_interval_sec");
+    lastUpdIdx = sqlite3_bind_parameter_index(stmt, ":last_update");
 
     string last_upd_str = timestampToString(channel.lastUpdate(), SQLITE_DATE_FORMAT_STDLIB_SYNTAX);
     
     sqlite3_bind_int64(stmt, channelIdIdx, channel.id());
-    sqlite3_bind_text(stmt, titleIdx, channel.title().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, rssLinkIdx, channel.rssLink().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, linkIdx, channel.link().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, descIdx, channel.description().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, titleIdx, channel.title().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, rssLinkIdx, channel.rssLink().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, linkIdx, channel.link().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, descIdx, channel.description().c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_int64(stmt, updSecIdx, channel.updateInterval());
-    sqlite3_bind_text(stmt, lastUpdIdx, last_upd_str.c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, lastUpdIdx, last_upd_str.c_str(), -1, SQLITE_TRANSIENT);
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::updateChannel");
     int64_t rowsAffected = sqlite3_changes(connection_->handle());
@@ -427,7 +466,7 @@ void SqliteProvider::deleteChannel(const Channel& channel) {
     sqlite3_stmt *stmt = getStatement(STATEMENT_DELETE_CHANNEL);
     sqlite3_reset(stmt);
 
-    int channelIdPos    = sqlite3_bind_parameter_index(stmt, "channel_id");
+    int channelIdPos    = sqlite3_bind_parameter_index(stmt, ":channel_id");
 
     sqlite3_bind_int64(stmt, channelIdPos, channel.id());
     int ret = sqlite3_step(stmt);
@@ -443,7 +482,7 @@ Post* SqliteProvider::findPostById(int64_t id) {
     lock_guard<recursive_mutex> locker(lock_);
     sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_POST_BY_ID);
     sqlite3_reset(stmt);
-    int postIdIdx = sqlite3_bind_parameter_index(stmt, "post_id");
+    int postIdIdx = sqlite3_bind_parameter_index(stmt, ":post_id");
     sqlite3_bind_int64(stmt, postIdIdx, id);
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::findPostById");
@@ -473,8 +512,8 @@ Post* SqliteProvider::findPostByGuid(const std::string& guid) {
     lock_guard<recursive_mutex> locker(lock_);
     sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_POST_BY_GUID);
     sqlite3_reset(stmt);
-    int guidIdIdx = sqlite3_bind_parameter_index(stmt, "guid");
-    sqlite3_bind_text(stmt, guidIdIdx, guid.c_str(), -1, nullptr);
+    int guidIdIdx = sqlite3_bind_parameter_index(stmt, ":guid");
+    sqlite3_bind_text(stmt, guidIdIdx, guid.c_str(), -1, SQLITE_TRANSIENT);
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::findPostByGuid");
 
@@ -503,7 +542,7 @@ vector<Post*>* SqliteProvider::getPostsForChannel(int64_t channelId) {
     lock_guard<recursive_mutex> locker(lock_);
     sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_POST_BY_CHANNEL);
     sqlite3_reset(stmt);
-    int channelIdIdx = sqlite3_bind_parameter_index(stmt, "channel_id");
+    int channelIdIdx = sqlite3_bind_parameter_index(stmt, ":channel_id");
     sqlite3_bind_int64(stmt, channelIdIdx, channelId);
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::findPostsByChannel");
@@ -544,24 +583,24 @@ int64_t SqliteProvider::insertPost(const Post& post) {
     sqlite3_stmt *stmt = getStatement(STATEMENT_INSERT_NEW_POST);
     sqlite3_reset(stmt);
 
-    int channelIdPos    = sqlite3_bind_parameter_index(stmt, "channel_id");
-    int guidPos         = sqlite3_bind_parameter_index(stmt, "guid");
-    int titlePos        = sqlite3_bind_parameter_index(stmt, "title");
-    int linkPos         = sqlite3_bind_parameter_index(stmt, "link");
-    int descPos         = sqlite3_bind_parameter_index(stmt, "description");
-    int pubDatePos      = sqlite3_bind_parameter_index(stmt, "pub_date");
-    int postTxtPos      = sqlite3_bind_parameter_index(stmt, "post_txt");
+    int channelIdPos    = sqlite3_bind_parameter_index(stmt, ":channel_id");
+    int guidPos         = sqlite3_bind_parameter_index(stmt, ":guid");
+    int titlePos        = sqlite3_bind_parameter_index(stmt, ":title");
+    int linkPos         = sqlite3_bind_parameter_index(stmt, ":link");
+    int descPos         = sqlite3_bind_parameter_index(stmt, ":description");
+    int pubDatePos      = sqlite3_bind_parameter_index(stmt, ":pub_date");
+    int postTxtPos      = sqlite3_bind_parameter_index(stmt, ":post_txt");
 
     sqlite3_bind_int64(stmt, channelIdPos, post.channelId());
-    sqlite3_bind_text(stmt, guidPos, post.guid().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, titlePos, post.title().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, linkPos, post.link().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, descPos, post.description().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, guidPos, post.guid().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, titlePos, post.title().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, linkPos, post.link().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, descPos, post.description().c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, pubDatePos,
                       timestampToString(post.publicationDate(),
                                         SQLITE_DATE_FORMAT_STDLIB_SYNTAX).c_str(),
-                      -1, nullptr);
-    sqlite3_bind_text(stmt, postTxtPos, post.text().c_str(), -1, nullptr);
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, postTxtPos, post.text().c_str(), -1, SQLITE_TRANSIENT);
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::insertPost");
     int64_t newId = sqlite3_last_insert_rowid(connection_->handle());
@@ -573,26 +612,26 @@ bool SqliteProvider::updatePost(const Post& post) {
     sqlite3_stmt *stmt = getStatement(STATEMENT_UPDATE_POST);
     sqlite3_reset(stmt);
 
-    int postIdPos       = sqlite3_bind_parameter_index(stmt, "post_id");
-    int channelIdPos    = sqlite3_bind_parameter_index(stmt, "channel_id");
-    int guidPos         = sqlite3_bind_parameter_index(stmt, "guid");
-    int titlePos        = sqlite3_bind_parameter_index(stmt, "title");
-    int linkPos         = sqlite3_bind_parameter_index(stmt, "link");
-    int descPos         = sqlite3_bind_parameter_index(stmt, "description");
-    int pubDatePos      = sqlite3_bind_parameter_index(stmt, "pub_date");
-    int postTxtPos      = sqlite3_bind_parameter_index(stmt, "post_txt");
+    int postIdPos       = sqlite3_bind_parameter_index(stmt, ":post_id");
+    int channelIdPos    = sqlite3_bind_parameter_index(stmt, ":channel_id");
+    int guidPos         = sqlite3_bind_parameter_index(stmt, ":guid");
+    int titlePos        = sqlite3_bind_parameter_index(stmt, ":title");
+    int linkPos         = sqlite3_bind_parameter_index(stmt, ":link");
+    int descPos         = sqlite3_bind_parameter_index(stmt, ":description");
+    int pubDatePos      = sqlite3_bind_parameter_index(stmt, ":pub_date");
+    int postTxtPos      = sqlite3_bind_parameter_index(stmt, ":post_txt");
 
     sqlite3_bind_int64(stmt, postIdPos, post.id());
     sqlite3_bind_int64(stmt, channelIdPos, post.channelId());
-    sqlite3_bind_text(stmt, guidPos, post.guid().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, titlePos, post.title().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, linkPos, post.link().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, descPos, post.description().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, guidPos, post.guid().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, titlePos, post.title().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, linkPos, post.link().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, descPos, post.description().c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, pubDatePos,
                       timestampToString(post.publicationDate(),
                                         SQLITE_DATE_FORMAT_STDLIB_SYNTAX).c_str(),
-                      -1, nullptr);
-    sqlite3_bind_text(stmt, postTxtPos, post.text().c_str(), -1, nullptr);
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, postTxtPos, post.text().c_str(), -1, SQLITE_TRANSIENT);
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::updatePost");
     int64_t rowsAffected = sqlite3_changes(connection_->handle());
@@ -605,7 +644,7 @@ void SqliteProvider::deletePost(const Post& post) {
     sqlite3_stmt *stmt = getStatement(STATEMENT_DELETE_POST);
     sqlite3_reset(stmt);
 
-    int postIdPos    = sqlite3_bind_parameter_index(stmt, "post_id");
+    int postIdPos    = sqlite3_bind_parameter_index(stmt, ":post_id");
 
     sqlite3_bind_int64(stmt, postIdPos, post.id());
     int ret = sqlite3_step(stmt);
@@ -620,7 +659,7 @@ vector<Channel*>* SqliteProvider::getSubscriptionsForUser(const User& user) {
     lock_guard<recursive_mutex> locker(lock_);
     sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_CHANNELS_BY_USER_ID);
     sqlite3_reset(stmt);
-    int userIdIdx = sqlite3_bind_parameter_index(stmt, "user_id");
+    int userIdIdx = sqlite3_bind_parameter_index(stmt, ":user_id");
     sqlite3_bind_int64(stmt, userIdIdx, user.id());
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::getSubscriptionsForUser");
@@ -656,7 +695,7 @@ std::vector<User*>* SqliteProvider::getUsersForChannel(const Channel& channel) {
     lock_guard<recursive_mutex> locker(lock_);
     sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_CHANNELS_BY_USER_ID);
     sqlite3_reset(stmt);
-    int channelIdIdx = sqlite3_bind_parameter_index(stmt, "channel_id");
+    int channelIdIdx = sqlite3_bind_parameter_index(stmt, ":channel_id");
     sqlite3_bind_int64(stmt, channelIdIdx, channel.id());
     int ret = sqlite3_step(stmt);
     checkSqliteResult(ret, "SqliteProvider::getUsersForChannel");
@@ -693,8 +732,8 @@ void SqliteProvider::subscribeUser(const User& user, const Channel& channel) {
     sqlite3_stmt *stmt = getStatement(STATEMENT_INSERT_NEW_USER_CHANNEL);
     sqlite3_reset(stmt);
 
-    int channelIdPos    = sqlite3_bind_parameter_index(stmt, "channel_id");
-    int userIdPos         = sqlite3_bind_parameter_index(stmt, "user_id");
+    int channelIdPos    = sqlite3_bind_parameter_index(stmt, ":channel_id");
+    int userIdPos         = sqlite3_bind_parameter_index(stmt, ":user_id");
 
     sqlite3_bind_int64(stmt, channelIdPos, channel.id());
     sqlite3_bind_int64(stmt, userIdPos, user.id());
@@ -708,8 +747,8 @@ void SqliteProvider::unsubscribeUser(const User& user, const Channel& channel) {
     sqlite3_stmt *stmt = getStatement(STATEMENT_DELETE_USER_CHANNEL);
     sqlite3_reset(stmt);
 
-    int channelIdPos    = sqlite3_bind_parameter_index(stmt, "channel_id");
-    int userIdPos         = sqlite3_bind_parameter_index(stmt, "user_id");
+    int channelIdPos    = sqlite3_bind_parameter_index(stmt, ":channel_id");
+    int userIdPos         = sqlite3_bind_parameter_index(stmt, ":user_id");
 
     sqlite3_bind_int64(stmt, channelIdPos, channel.id());
     sqlite3_bind_int64(stmt, userIdPos, user.id());
