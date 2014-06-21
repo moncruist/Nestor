@@ -9,7 +9,7 @@ namespace nestor {
 namespace net {
 
 HttpMultiClient::HttpMultiClient() {
-    runningStatus_ = 0;
+    runningStatus_ = -1;
     finished_ = false;
     multiHandle_ = curl_multi_init();
     if (multiHandle_ == nullptr) {
@@ -45,38 +45,55 @@ std::vector<HttpResource*>* HttpMultiClient::perform() {
 
     vector<HttpResource *> *resources = nullptr;
 
+    if (runningStatus_ == -1)
+        runningStatus_ = clients_.size();
     int prevStatus = runningStatus_;
-    int rc = curl_multi_perform(multiHandle_, &runningStatus_);
+    while (prevStatus == runningStatus_) {
+        int rc = curl_multi_perform(multiHandle_, &runningStatus_);
 
-    if (rc != CURLM_OK) {
-        NET_LOG_LVL(ERROR, "HttpMultiClient::perform: curl multi perform failed with code " << rc
-                    << ": " << curl_multi_strerror((CURLMcode)rc));
-        return nullptr;
-    }
+        if (rc != CURLM_OK) {
+            NET_LOG_LVL(ERROR, "HttpMultiClient::perform: curl multi perform failed with code " << rc
+                        << ": " << curl_multi_strerror((CURLMcode)rc));
+            return nullptr;
+        }
 
-    resources = new vector<HttpResource *>();
-    if (runningStatus_ != prevStatus) {
-        CURLMsg *msg;
-        int msgsLeft;
-        while ((msg = curl_multi_info_read(multiHandle_, &msgsLeft))) {
-            if (msg->msg == CURLMSG_DONE) {
-                HttpClient *doneClient = nullptr;
-                for (HttpClient *c : clients_) {
-                    if (c->handle() == msg->easy_handle) {
-                        doneClient = c;
-                        break;
+        resources = new vector<HttpResource *>();
+        if (runningStatus_ != prevStatus) {
+            CURLMsg *msg;
+            int msgsLeft;
+            while ((msg = curl_multi_info_read(multiHandle_, &msgsLeft))) {
+                if (msg->msg == CURLMSG_DONE) {
+                    HttpClient *doneClient = nullptr;
+                    for (HttpClient *c : clients_) {
+                        if (c->handle() == msg->easy_handle) {
+                            doneClient = c;
+                            break;
+                        }
                     }
-                }
 
-                HttpResource *res = doneClient->parseReceivedData();
-                res->setRequestUrl(clientResources_[doneClient]);
-                resources->push_back(res);
+                    HttpResource *res = doneClient->parseReceivedData();
+                    res->setRequestUrl(clientResources_[doneClient]);
+                    resources->push_back(res);
+                }
             }
+        }
+
+
+        if (runningStatus_ == 0) {
+            finished_ = true;
+            break;
+        }
+
+        rc = curl_multi_wait(multiHandle_, nullptr, 0, 1000, nullptr);
+        if (rc != CURLM_OK) {
+            NET_LOG_LVL(ERROR, "HttpMultiClient::perform: curl multi wait failed with code " << rc
+                        << ": " << curl_multi_strerror((CURLMcode)rc));
+            return nullptr;
         }
     }
 
-    if (runningStatus_ == 0)
-        finished_ = true;
+
+    NET_LOG_LVL(DEBUG, "HttpMultiClient::perform: clients ready: " << resources->size());
 
     return resources;
 }
