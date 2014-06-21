@@ -143,12 +143,12 @@ public:
     void deleteChannel(const Channel &channel);
 
     /**
-     * Create 'feeds' table for storing RSS feeds.
+     * Create 'posts' table for storing RSS posts.
      * Currently, 'feeds' table entirely
-     * maps to the nestor::service::Feed class.
+     * maps to the @sa nestor::service::Post class.
      * May throw SqliteProviderException.
      */
-    void createFeedsTable();
+    void createPostsTable();
 
     /**
      * Search feed in 'feeds' table by feed id.
@@ -156,7 +156,7 @@ public:
      * @param id Identifier of the feed to search.
      * @return Heap allocated Feed object or null if no feed was found.
      */
-    Feed *findFeedById(int64_t id);
+    Post *findPostById(int64_t id);
 
     /**
      * Search feed in 'feeds' table by feed guid.
@@ -164,16 +164,16 @@ public:
      * @param guid GUID of the feed to search.
      * @return Heap allocated Feed object or null if no feed was found.
      */
-    Feed *findFeedByGuid(const std::string &guid);
+    Post *findPostByGuid(const std::string &guid);
 
     /**
-     * Search feeds in 'feeds' table of specified channel.
+     * Search posts in 'posts' table of specified channel.
      * May throw SqliteProviderException.
      * @param channelId Identifier of feeds channel.
      * @return Heap allocated vector of Feed objects.
      */
-    std::vector<Feed *> *getFeedsForChannel(int64_t channelId);
-    std::vector<Feed *> *getFeedsForChannel(const Channel &channel);
+    std::vector<Post *> *getPostsForChannel(int64_t channelId);
+    std::vector<Post *> *getPostsForChannel(const Channel &channel);
 
     /**
      * Inserts new channel into the 'channels' table.
@@ -183,7 +183,7 @@ public:
      *
      * @return Identifier of the inserted object.
      */
-    int64_t insertFeed(const Feed &feed);
+    int64_t insertPost(const Post &feed);
 
     /**
      * Updates existent channel in the 'channels' table.
@@ -193,13 +193,13 @@ public:
      * @return Returns true if the channel was updated successfully,
      * false - no channel was found with specified 'id'.
      */
-    bool updateFeed(const Feed &feed);
+    bool updatePost(const Post &feed);
 
     /**
      * Deletes feed from `feeds` table.
      * @param feed Feed object contained which contained initialized identifier
      */
-    void deleteFeed(const Feed &feed);
+    void deletePost(const Post &feed);
 
     /**
      * Create table for storing user subscriptions.
@@ -240,7 +240,7 @@ private:
     /**
      * Maps sqlite3 result row from 'feeds' table to the Feed object.
      */
-    void parseFeedRow(sqlite3_stmt *stmt, Feed &out);
+    void parsePostRow(sqlite3_stmt *stmt, Post &out);
 
     void createTableByStatement(int stmtIndex, const std::string &tag);
 
@@ -261,14 +261,14 @@ private:
         STATEMENT_UPDATE_CHANNEL,
         STATEMENT_DELETE_CHANNEL,
 
-        // FEEDS table ----------------
-        STATEMENT_CREATE_FEED_TABLE,
-        STATEMENT_FIND_FEED_BY_ID,
-        STATEMENT_FIND_FEED_BY_GUID,
-        STATEMENT_FIND_FEED_BY_CHANNEL,
-        STATEMENT_INSERT_NEW_FEED,
-        STATEMENT_UPDATE_FEED,
-        STATEMENT_DELETE_FEED,
+        // POSTS table ----------------
+        STATEMENT_CREATE_POST_TABLE,
+        STATEMENT_FIND_POST_BY_ID,
+        STATEMENT_FIND_POST_BY_GUID,
+        STATEMENT_FIND_POST_BY_CHANNEL,
+        STATEMENT_INSERT_NEW_POST,
+        STATEMENT_UPDATE_POST,
+        STATEMENT_DELETE_POST,
 
         // USER_CHANNEL table ---------
         STATEMENT_CREATE_USER_CHANNEL_TABLE,

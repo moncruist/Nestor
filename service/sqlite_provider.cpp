@@ -98,50 +98,50 @@ const char *SqliteProvider::SQL_STATEMENTS[STATEMENTS_LENGTH] = {
         "DELETE FROM `channels` WHERE `channel_id` = :channel_id;",
         //--------------------------------------------------------
 
-        // --------- STATEMENT_CREATE_FEED_TABLE-----------------
-        "CREATE TABLE IF NOT EXISTS `feeds`("
-        "`feed_id` INTEGER PRIMARY KEY ASC AUTOINCREMENT NOT NULL,"
+        // --------- STATEMENT_CREATE_POST_TABLE-----------------
+        "CREATE TABLE IF NOT EXISTS `posts`("
+        "`post_id` INTEGER PRIMARY KEY ASC AUTOINCREMENT NOT NULL,"
         "`channel_id` INTEGER NOT NULL,"
         "`guid` TEXT NOT NULL,"
         "`title` TEXT NOT NULL,"
         "`link` TEXT NOT NULL,"
         "`description` TEXT NOT NULL,"
         "`pub_date` TEXT NOT NULL,"
-        "`feed_txt` TEXT);\n"
-        "CREATE INDEX IF NOT EXISTS `feeds_guid_idx` on `feeds`"
+        "`post_txt` TEXT);\n"
+        "CREATE INDEX IF NOT EXISTS `posts_guid_idx` on `posts`"
         "(`guid`);\n"
-        "CREATE INDEX IF NOT EXISTS `feeds_channel_id_idx` on `feeds`"
+        "CREATE INDEX IF NOT EXISTS `posts_channel_id_idx` on `posts`"
         "(`channel_id`);\n",
         //--------------------------------------------------------
 
-        // --------- STATEMENT_FIND_FEED_BY_ID--------------------
-        "SELECT * FROM `feeds` WHERE `feed_id` = :feed_id;",
+        // --------- STATEMENT_FIND_POST_BY_ID--------------------
+        "SELECT * FROM `posts` WHERE `post_id` = :post_id;",
         //--------------------------------------------------------
 
-        // --------- STATEMENT_FIND_FEED_BY_GUID------------------
-        "SELECT * FROM `feeds` WHERE `guid` = :guid;",
+        // --------- STATEMENT_FIND_POST_BY_GUID------------------
+        "SELECT * FROM `posts` WHERE `guid` = :guid;",
         //--------------------------------------------------------
 
-        // --------- STATEMENT_FIND_FEED_BY_CHANNEL---------------
-        "SELECT * FROM `feeds` WHERE `channel_id` = :channel_id;",
+        // --------- STATEMENT_FIND_POST_BY_CHANNEL---------------
+        "SELECT * FROM `posts` WHERE `channel_id` = :channel_id;",
         //--------------------------------------------------------
 
-        // --------- STATEMENT_INSERT_NEW_FEED--------------------
-        "INSERT INTO `feeds`(`channel_id`, `guid`, `title`,"
-        "`link`, `description`, `pub_date`,`feed_txt`) "
+        // --------- STATEMENT_INSERT_NEW_POST--------------------
+        "INSERT INTO `posts`(`channel_id`, `guid`, `title`,"
+        "`link`, `description`, `pub_date`,`post_txt`) "
         "VALUES(:channel_id, :guid, :title, :link, :description,"
-        ":pub_date, :feed_txt);",
+        ":pub_date, :post_txt);",
         //--------------------------------------------------------
 
-        // --------- STATEMENT_UPDATE_FEED---------------------
-        "UPDATE `feeds` SET `channel_id`=:channel_id, `guid`=:guid, "
+        // --------- STATEMENT_UPDATE_POST---------------------
+        "UPDATE `posts` SET `channel_id`=:channel_id, `guid`=:guid, "
         "`title`=:title, `link`=:link, `description`=:description,"
-        "`pub_date`=:pub_date, `feed_txt`=:feed_txt "
-        "WHERE `feed_id` = :feed_id;",
+        "`pub_date`=:pub_date, `post_txt`=:post_txt "
+        "WHERE `post_id` = :post_id;",
         //--------------------------------------------------------
 
-        // --------- STATEMENT_DELETE_FEED---------------------
-        "DELETE FROM `feeds` WHERE `feed_id` = :feed_id;",
+        // --------- STATEMENT_DELETE_POST---------------------
+        "DELETE FROM `posts` WHERE `post_id` = :post_id;",
         //--------------------------------------------------------
 
         // --------- STATEMENT_CREATE_USER_CHANNEL_TABLE---------------
@@ -434,31 +434,31 @@ void SqliteProvider::deleteChannel(const Channel& channel) {
     checkSqliteResult(ret, "SqliteProvider::deleteChannel");
 }
 
-void SqliteProvider::createFeedsTable() {
-    createTableByStatement(STATEMENT_CREATE_FEED_TABLE, "SqliteProvider::createFeedsTable");
+void SqliteProvider::createPostsTable() {
+    createTableByStatement(STATEMENT_CREATE_POST_TABLE, "SqliteProvider::createPostsTable");
 }
 
 
-Feed* SqliteProvider::findFeedById(int64_t id) {
+Post* SqliteProvider::findPostById(int64_t id) {
     lock_guard<recursive_mutex> locker(lock_);
-    sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_FEED_BY_ID);
+    sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_POST_BY_ID);
     sqlite3_reset(stmt);
-    int feedIdIdx = sqlite3_bind_parameter_index(stmt, "feed_id");
-    sqlite3_bind_int64(stmt, feedIdIdx, id);
+    int postIdIdx = sqlite3_bind_parameter_index(stmt, "post_id");
+    sqlite3_bind_int64(stmt, postIdIdx, id);
     int ret = sqlite3_step(stmt);
-    checkSqliteResult(ret, "SqliteProvider::findFeedById");
+    checkSqliteResult(ret, "SqliteProvider::findPostById");
 
     if (ret == SQLITE_DONE) {
         /* 0 rows was found */
         return nullptr;
     }
 
-    Feed *feed = new Feed();
+    Post *post = new Post();
     try {
-        parseFeedRow(stmt, *feed);
+        parsePostRow(stmt, *post);
     } catch (logic_error &e) {
         SERVICE_LOG_LVL(ERROR, e.what());
-        delete feed;
+        delete post;
         throw SqliteProviderException(e.what());
     }
 
@@ -466,29 +466,29 @@ Feed* SqliteProvider::findFeedById(int64_t id) {
         ret = sqlite3_step(stmt);
     }
 
-    return feed;
+    return post;
 }
 
-Feed* SqliteProvider::findFeedByGuid(const std::string& guid) {
+Post* SqliteProvider::findPostByGuid(const std::string& guid) {
     lock_guard<recursive_mutex> locker(lock_);
-    sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_FEED_BY_GUID);
+    sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_POST_BY_GUID);
     sqlite3_reset(stmt);
     int guidIdIdx = sqlite3_bind_parameter_index(stmt, "guid");
     sqlite3_bind_text(stmt, guidIdIdx, guid.c_str(), -1, nullptr);
     int ret = sqlite3_step(stmt);
-    checkSqliteResult(ret, "SqliteProvider::findFeedByGuid");
+    checkSqliteResult(ret, "SqliteProvider::findPostByGuid");
 
     if (ret == SQLITE_DONE) {
         /* 0 rows was found */
         return nullptr;
     }
 
-    Feed *feed = new Feed();
+    Post *post = new Post();
     try {
-        parseFeedRow(stmt, *feed);
+        parsePostRow(stmt, *post);
     } catch (logic_error &e) {
         SERVICE_LOG_LVL(ERROR, e.what());
-        delete feed;
+        delete post;
         throw SqliteProviderException(e.what());
     }
 
@@ -496,52 +496,52 @@ Feed* SqliteProvider::findFeedByGuid(const std::string& guid) {
         ret = sqlite3_step(stmt);
     }
 
-    return feed;
+    return post;
 }
 
-vector<Feed*>* SqliteProvider::getFeedsForChannel(int64_t channelId) {
+vector<Post*>* SqliteProvider::getPostsForChannel(int64_t channelId) {
     lock_guard<recursive_mutex> locker(lock_);
-    sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_FEED_BY_CHANNEL);
+    sqlite3_stmt *stmt = getStatement(STATEMENT_FIND_POST_BY_CHANNEL);
     sqlite3_reset(stmt);
     int channelIdIdx = sqlite3_bind_parameter_index(stmt, "channel_id");
     sqlite3_bind_int64(stmt, channelIdIdx, channelId);
     int ret = sqlite3_step(stmt);
-    checkSqliteResult(ret, "SqliteProvider::findFeedsByChannel");
+    checkSqliteResult(ret, "SqliteProvider::findPostsByChannel");
 
     if (ret == SQLITE_DONE) {
         /* 0 rows was found */
         return nullptr;
     }
 
-    vector<Feed*> *foundFeeds = new vector<Feed *>();
+    vector<Post*> *foundPosts = new vector<Post *>();
 
 
     while (ret != SQLITE_DONE) {
-        Feed *feed = new Feed();
+        Post *post = new Post();
         try {
-            parseFeedRow(stmt, *feed);
+            parsePostRow(stmt, *post);
         } catch (logic_error &e) {
             /* In case of exception we are just not adding
-             * feed into result array. */
+             * post into result array. */
             SERVICE_LOG_LVL(ERROR, e.what());
-            delete feed;
+            delete post;
             ret = sqlite3_step(stmt);
             continue;
         }
-        foundFeeds->push_back(feed);
+        foundPosts->push_back(post);
         ret = sqlite3_step(stmt);
     }
 
-    return foundFeeds;
+    return foundPosts;
 }
 
-vector<Feed*>* SqliteProvider::getFeedsForChannel(const Channel& channel) {
-    return getFeedsForChannel(channel.id());
+vector<Post*>* SqliteProvider::getPostsForChannel(const Channel& channel) {
+    return getPostsForChannel(channel.id());
 }
 
-int64_t SqliteProvider::insertFeed(const Feed& feed) {
+int64_t SqliteProvider::insertPost(const Post& post) {
     lock_guard<recursive_mutex> locker(lock_);
-    sqlite3_stmt *stmt = getStatement(STATEMENT_INSERT_NEW_FEED);
+    sqlite3_stmt *stmt = getStatement(STATEMENT_INSERT_NEW_POST);
     sqlite3_reset(stmt);
 
     int channelIdPos    = sqlite3_bind_parameter_index(stmt, "channel_id");
@@ -550,66 +550,66 @@ int64_t SqliteProvider::insertFeed(const Feed& feed) {
     int linkPos         = sqlite3_bind_parameter_index(stmt, "link");
     int descPos         = sqlite3_bind_parameter_index(stmt, "description");
     int pubDatePos      = sqlite3_bind_parameter_index(stmt, "pub_date");
-    int feedTxtPos      = sqlite3_bind_parameter_index(stmt, "feed_txt");
+    int postTxtPos      = sqlite3_bind_parameter_index(stmt, "post_txt");
 
-    sqlite3_bind_int64(stmt, channelIdPos, feed.channelId());
-    sqlite3_bind_text(stmt, guidPos, feed.guid().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, titlePos, feed.title().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, linkPos, feed.link().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, descPos, feed.description().c_str(), -1, nullptr);
+    sqlite3_bind_int64(stmt, channelIdPos, post.channelId());
+    sqlite3_bind_text(stmt, guidPos, post.guid().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, titlePos, post.title().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, linkPos, post.link().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, descPos, post.description().c_str(), -1, nullptr);
     sqlite3_bind_text(stmt, pubDatePos,
-                      timestampToString(feed.publicationDate(),
+                      timestampToString(post.publicationDate(),
                                         SQLITE_DATE_FORMAT_STDLIB_SYNTAX).c_str(),
                       -1, nullptr);
-    sqlite3_bind_text(stmt, feedTxtPos, feed.text().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, postTxtPos, post.text().c_str(), -1, nullptr);
     int ret = sqlite3_step(stmt);
-    checkSqliteResult(ret, "SqliteProvider::insertFeed");
+    checkSqliteResult(ret, "SqliteProvider::insertPost");
     int64_t newId = sqlite3_last_insert_rowid(connection_->handle());
     return newId;
 }
 
-bool SqliteProvider::updateFeed(const Feed& feed) {
+bool SqliteProvider::updatePost(const Post& post) {
     lock_guard<recursive_mutex> locker(lock_);
-    sqlite3_stmt *stmt = getStatement(STATEMENT_UPDATE_FEED);
+    sqlite3_stmt *stmt = getStatement(STATEMENT_UPDATE_POST);
     sqlite3_reset(stmt);
 
-    int feedIdPos       = sqlite3_bind_parameter_index(stmt, "feed_id");
+    int postIdPos       = sqlite3_bind_parameter_index(stmt, "post_id");
     int channelIdPos    = sqlite3_bind_parameter_index(stmt, "channel_id");
     int guidPos         = sqlite3_bind_parameter_index(stmt, "guid");
     int titlePos        = sqlite3_bind_parameter_index(stmt, "title");
     int linkPos         = sqlite3_bind_parameter_index(stmt, "link");
     int descPos         = sqlite3_bind_parameter_index(stmt, "description");
     int pubDatePos      = sqlite3_bind_parameter_index(stmt, "pub_date");
-    int feedTxtPos      = sqlite3_bind_parameter_index(stmt, "feed_txt");
+    int postTxtPos      = sqlite3_bind_parameter_index(stmt, "post_txt");
 
-    sqlite3_bind_int64(stmt, feedIdPos, feed.id());
-    sqlite3_bind_int64(stmt, channelIdPos, feed.channelId());
-    sqlite3_bind_text(stmt, guidPos, feed.guid().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, titlePos, feed.title().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, linkPos, feed.link().c_str(), -1, nullptr);
-    sqlite3_bind_text(stmt, descPos, feed.description().c_str(), -1, nullptr);
+    sqlite3_bind_int64(stmt, postIdPos, post.id());
+    sqlite3_bind_int64(stmt, channelIdPos, post.channelId());
+    sqlite3_bind_text(stmt, guidPos, post.guid().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, titlePos, post.title().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, linkPos, post.link().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, descPos, post.description().c_str(), -1, nullptr);
     sqlite3_bind_text(stmt, pubDatePos,
-                      timestampToString(feed.publicationDate(),
+                      timestampToString(post.publicationDate(),
                                         SQLITE_DATE_FORMAT_STDLIB_SYNTAX).c_str(),
                       -1, nullptr);
-    sqlite3_bind_text(stmt, feedTxtPos, feed.text().c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt, postTxtPos, post.text().c_str(), -1, nullptr);
     int ret = sqlite3_step(stmt);
-    checkSqliteResult(ret, "SqliteProvider::updateFeed");
+    checkSqliteResult(ret, "SqliteProvider::updatePost");
     int64_t rowsAffected = sqlite3_changes(connection_->handle());
     if (rowsAffected > 0) return true;
     else return false;
 }
 
-void SqliteProvider::deleteFeed(const Feed& feed) {
+void SqliteProvider::deletePost(const Post& post) {
     lock_guard<recursive_mutex> locker(lock_);
-    sqlite3_stmt *stmt = getStatement(STATEMENT_DELETE_FEED);
+    sqlite3_stmt *stmt = getStatement(STATEMENT_DELETE_POST);
     sqlite3_reset(stmt);
 
-    int feedIdPos    = sqlite3_bind_parameter_index(stmt, "feed_id");
+    int postIdPos    = sqlite3_bind_parameter_index(stmt, "post_id");
 
-    sqlite3_bind_int64(stmt, feedIdPos, feed.id());
+    sqlite3_bind_int64(stmt, postIdPos, post.id());
     int ret = sqlite3_step(stmt);
-    checkSqliteResult(ret, "SqliteProvider::deleteFeed");
+    checkSqliteResult(ret, "SqliteProvider::deletePost");
 }
 
 void SqliteProvider::createSubsriptionTable() {
@@ -639,7 +639,7 @@ vector<Channel*>* SqliteProvider::getSubscriptionsForUser(const User& user) {
             parseChannelRow(stmt, *channel);
         } catch (logic_error &e) {
             /* In case of exception we are just not adding
-             * feed into result array. */
+             * channel into result array. */
             SERVICE_LOG_LVL(ERROR, e.what());
             delete channel;
             ret = sqlite3_step(stmt);
@@ -675,7 +675,7 @@ std::vector<User*>* SqliteProvider::getUsersForChannel(const Channel& channel) {
             parseUserRow(stmt, *user);
         } catch (logic_error &e) {
             /* In case of exception we are just not adding
-             * feed into result array. */
+             * user into result array. */
             SERVICE_LOG_LVL(ERROR, e.what());
             delete user;
             ret = sqlite3_step(stmt);
@@ -817,58 +817,58 @@ void SqliteProvider::parseChannelRow(sqlite3_stmt* stmt, Channel& out) {
 }
 
 
-void SqliteProvider::parseFeedRow(sqlite3_stmt* stmt, Feed& out) {
+void SqliteProvider::parsePostRow(sqlite3_stmt* stmt, Post& out) {
     if (!stmt)
-        throw logic_error("SqliteProvider::parseFeedRow: invalid argument `stmt`");
+        throw logic_error("SqliteProvider::parsePostRow: invalid argument `stmt`");
     int columns = sqlite3_column_count(stmt);
     if (columns != 8) {
         ostringstream oss;
-        oss << "SqliteProvider::parseFeedRow: invalid column count in result set. Expected: 8. Actual: " << columns;
+        oss << "SqliteProvider::parsePostRow: invalid column count in result set. Expected: 8. Actual: " << columns;
         throw logic_error(oss.str());
     }
 
     if (sqlite3_column_type(stmt, 0) == SQLITE_INTEGER)
         out.setId(sqlite3_column_int(stmt, 0));
     else
-        throw logic_error("SqliteProvider::parseFeedRow: invalid column 0 type");
+        throw logic_error("SqliteProvider::parsePostRow: invalid column 0 type");
 
     if (sqlite3_column_type(stmt, 1) == SQLITE_INTEGER)
         out.setChannelId(sqlite3_column_int(stmt, 1));
     else
-        throw logic_error("SqliteProvider::parseFeedRow: invalid column 1 type");
+        throw logic_error("SqliteProvider::parsePostRow: invalid column 1 type");
 
     if (sqlite3_column_type(stmt, 2) == SQLITE_TEXT)
         out.setGuid(string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2))));
     else
-        throw logic_error("SqliteProvider::parseFeedRow: invalid column 2 type");
+        throw logic_error("SqliteProvider::parsePostRow: invalid column 2 type");
 
     if (sqlite3_column_type(stmt, 3) == SQLITE_TEXT)
         out.setTitle(string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3))));
     else
-        throw logic_error("SqliteProvider::parseFeedRow: invalid column 3 type");
+        throw logic_error("SqliteProvider::parsePostRow: invalid column 3 type");
 
     if (sqlite3_column_type(stmt, 4) == SQLITE_TEXT)
         out.setLink(string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 4))));
     else
-        throw logic_error("SqliteProvider::parseFeedRow: invalid column 4 type");
+        throw logic_error("SqliteProvider::parsePostRow: invalid column 4 type");
 
     if (sqlite3_column_type(stmt, 5) == SQLITE_TEXT)
         out.setDescription(string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 5))));
     else
-        throw logic_error("SqliteProvider::parseFeedRow: invalid column 5 type");
+        throw logic_error("SqliteProvider::parsePostRow: invalid column 5 type");
 
     if (sqlite3_column_type(stmt, 6) == SQLITE_TEXT) {
         string timestamp = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 6));
         out.setPublicationDate(stringToTimestamp(timestamp, SQLITE_DATE_FORMAT_STDLIB_SYNTAX));
     }
     else {
-        throw logic_error("SqliteProvider::parseFeedRow: invalid column 6 type");
+        throw logic_error("SqliteProvider::parsePostRow: invalid column 6 type");
     }
 
     if (sqlite3_column_type(stmt, 7) == SQLITE_TEXT)
         out.setText(string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 7))));
     else
-        throw logic_error("SqliteProvider::parseFeedRow: invalid column 7 type");
+        throw logic_error("SqliteProvider::parsePostRow: invalid column 7 type");
 }
 
 void SqliteProvider::createTableByStatement(int stmtIndex, const std::string& tag) {

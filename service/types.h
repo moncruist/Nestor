@@ -79,7 +79,7 @@ private:
 /**
  * POD class representing Feed object.
  */
-class Feed {
+class Post {
 public:
     long long channelId() const;
     void setChannelId(long long channelId);

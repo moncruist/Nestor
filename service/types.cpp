@@ -105,67 +105,67 @@ void Channel::setUpdateInterval(int updateInterval) {
 }
 
 
-long long Feed::channelId() const {
+long long Post::channelId() const {
     return channelId_;
 }
 
-void Feed::setChannelId(long long channelId) {
+void Post::setChannelId(long long channelId) {
     channelId_ = channelId;
 }
 
-const std::string& Feed::description() const {
+const std::string& Post::description() const {
     return description_;
 }
 
-void Feed::setDescription(const std::string& description) {
+void Post::setDescription(const std::string& description) {
     description_ = description;
 }
 
-const std::string& Feed::guid() const {
+const std::string& Post::guid() const {
     return guid_;
 }
 
-void Feed::setGuid(const std::string& guid) {
+void Post::setGuid(const std::string& guid) {
     guid_ = guid;
 }
 
-long long Feed::id() const {
+long long Post::id() const {
     return id_;
 }
 
-void Feed::setId(long long id) {
+void Post::setId(long long id) {
     id_ = id;
 }
 
-const std::string& Feed::link() const {
+const std::string& Post::link() const {
     return link_;
 }
 
-void Feed::setLink(const std::string& link) {
+void Post::setLink(const std::string& link) {
     link_ = link;
 }
 
-const std::tm& Feed::publicationDate() const {
+const std::tm& Post::publicationDate() const {
     return publicationDate_;
 }
 
-void Feed::setPublicationDate(const std::tm& publicationDate) {
+void Post::setPublicationDate(const std::tm& publicationDate) {
     publicationDate_ = publicationDate;
 }
 
-const std::string& Feed::text() const {
+const std::string& Post::text() const {
     return text_;
 }
 
-void Feed::setText(const std::string& text) {
+void Post::setText(const std::string& text) {
     text_ = text;
 }
 
-const std::string& Feed::title() const {
+const std::string& Post::title() const {
     return title_;
 }
 
-void Feed::setTitle(const std::string& title) {
+void Post::setTitle(const std::string& title) {
     title_ = title;
 }
 
