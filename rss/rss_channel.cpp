@@ -29,8 +29,8 @@ RssChannel::RssChannel()
         : RssChannel("", "", "") {
 }
 
-RssChannel::RssChannel(icu::UnicodeString title, icu::UnicodeString link,
-        icu::UnicodeString description)
+RssChannel::RssChannel(std::string title, std::string link,
+        std::string description)
         : title_(title), link_(link), description_(description) {
 }
 
@@ -54,35 +54,35 @@ unsigned int RssChannel::itemsCount() const {
     return items_.size();
 }
 
-const icu::UnicodeString& RssChannel::description() const {
+const std::string& RssChannel::description() const {
     return description_;
 }
 
-void RssChannel::setDescription(const icu::UnicodeString& description) {
+void RssChannel::setDescription(const std::string& description) {
     description_ = description;
 }
 
-const icu::UnicodeString& RssChannel::link() const {
+const std::string& RssChannel::link() const {
     return link_;
 }
 
-void RssChannel::setLink(const icu::UnicodeString& link) {
+void RssChannel::setLink(const std::string& link) {
     link_ = link;
 }
 
-const icu::UnicodeString& RssChannel::title() const {
+const std::string& RssChannel::title() const {
     return title_;
 }
 
-void RssChannel::setTitle(const icu::UnicodeString& title) {
+void RssChannel::setTitle(const std::string& title) {
     title_ = title;
 }
 
-const map<UnicodeString, UnicodeString>& RssChannel::optional() const {
+const map<string, string>& RssChannel::optional() const {
     return optional_;
 }
 
-void RssChannel::setOptional(const map<UnicodeString, UnicodeString>& tags) {
+void RssChannel::setOptional(const map<string, string>& tags) {
     optional_.clear();
     for (auto i = tags.cbegin(); i != tags.cend(); i++) {
         optional_.insert(make_pair((*i).first, (*i).second));

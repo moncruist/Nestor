@@ -31,22 +31,22 @@ class RssObject {
 public:
     RssObject();
     virtual ~RssObject();
-    const icu::UnicodeString& title() const;
-    void setTitle(const icu::UnicodeString& caption);
-    const icu::UnicodeString& text() const;
-    void setText(const icu::UnicodeString& text);
-    const icu::UnicodeString& link() const;
-    void setLink(const icu::UnicodeString& link);
-    const icu::UnicodeString& guid() const;
-    void setGuid(const icu::UnicodeString& guid);
+    const std::string& title() const;
+    void setTitle(const std::string& caption);
+    const std::string& text() const;
+    void setText(const std::string& text);
+    const std::string& link() const;
+    void setLink(const std::string& link);
+    const std::string& guid() const;
+    void setGuid(const std::string& guid);
     const std::tm& pubDate() const;
     void setPubDate(const std::tm& pubDate);
 
 private:
-    icu::UnicodeString title_;
-    icu::UnicodeString text_;
-    icu::UnicodeString link_;
-    icu::UnicodeString guid_;
+    std::string title_;
+    std::string text_;
+    std::string link_;
+    std::string guid_;
     std::tm pubDate_;
 };
 

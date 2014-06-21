@@ -66,13 +66,13 @@ static vector<RssObject *> *parseItems(XMLElement *channel) {
         RssObject *obj = new RssObject();
 
         try {
-            obj->setTitle(UnicodeString(getExpectedElement(rssItem, RssXmlParser::TITLE_ITEM)->GetText()));
-            obj->setLink(UnicodeString(getExpectedElement(rssItem, RssXmlParser::LINK_ITEM)->GetText()));
-            obj->setText(UnicodeString(getExpectedElement(rssItem, RssXmlParser::DESCRIPTION_ITEM)->GetText()));
+            obj->setTitle(getExpectedElement(rssItem, RssXmlParser::TITLE_ITEM)->GetText());
+            obj->setLink(getExpectedElement(rssItem, RssXmlParser::LINK_ITEM)->GetText());
+            obj->setText(getExpectedElement(rssItem, RssXmlParser::DESCRIPTION_ITEM)->GetText());
 
             XMLElement *guid = rssItem->FirstChildElement(RssXmlParser::GUID_ITEM);
             if (guid != nullptr)
-                obj->setGuid(UnicodeString(guid->GetText()));
+                obj->setGuid(guid->GetText());
             else
                 obj->setGuid(obj->link());  // use link as default
 
@@ -113,7 +113,6 @@ RssChannel *RssXmlParser::parseRss(const char *rss)
         throw RssXmlParserException("Missing root \"rss\" element");
 
     rssVersion = root->DoubleAttribute(RSS_VERSION_ATTR);
-    cout << "RSS version: " << rssVersion << endl;
 
     if (rssVersion < 2.0) {
         oss_err << "Unsupported RSS version " << rssVersion;
@@ -128,9 +127,9 @@ RssChannel *RssXmlParser::parseRss(const char *rss)
     // Parsing RSS <channel> tag
     // Required tags
     try {
-        rssChannel->setTitle(UnicodeString(getExpectedElement(channel, TITLE_ITEM)->GetText()));
-        rssChannel->setLink(UnicodeString(getExpectedElement(channel, LINK_ITEM)->GetText()));
-        rssChannel->setDescription(UnicodeString(getExpectedElement(channel, DESCRIPTION_ITEM)->GetText()));
+        rssChannel->setTitle(getExpectedElement(channel, TITLE_ITEM)->GetText());
+        rssChannel->setLink(getExpectedElement(channel, LINK_ITEM)->GetText());
+        rssChannel->setDescription(getExpectedElement(channel, DESCRIPTION_ITEM)->GetText());
 
     } catch (RssXmlParserException &e) {
         delete rssChannel;
@@ -140,19 +139,25 @@ RssChannel *RssXmlParser::parseRss(const char *rss)
     // Optional tags
     unordered_set<string> alreadyParsed = {TITLE_ITEM, LINK_ITEM, DESCRIPTION_ITEM,
             ITEM_TAG /* will parse "item" later*/ };
-    map<UnicodeString, UnicodeString> optionalTags;
+    map<string, string> optionalTags;
 
     tmp = channel->FirstChildElement();
     do {
-        if (alreadyParsed.count(tmp->Name())) {
+        string name;
+        if (tmp->Name())
+            name.assign(tmp->Name());
+        if (alreadyParsed.count(name)) {
             tmp = tmp->NextSiblingElement();
             continue;
         }
 
-        optionalTags.insert(make_pair(tmp->Name(), tmp->GetText()));
+        string txt;
+        if (tmp->GetText())
+            txt.assign(tmp->GetText());
+        optionalTags.insert(make_pair(name, txt));
         tmp = tmp->NextSiblingElement();
     } while(tmp != nullptr);
-
+    cout << "here" << endl;
     rssChannel->setOptional(optionalTags);
 
     auto items = parseItems(channel);

@@ -26,7 +26,6 @@
 #include <string>
 #include <map>
 
-#include <unicode/unistr.h>
 #include "rss_object.h"
 
 namespace nestor {
@@ -35,29 +34,29 @@ namespace rss {
 class RssChannel {
 public:
     explicit RssChannel();
-    RssChannel(icu::UnicodeString title, icu::UnicodeString link, icu::UnicodeString description);
+    RssChannel(std::string title, std::string link, std::string description);
     virtual ~RssChannel();
 
     void addItem(RssObject *item);
     RssObject *getItem(unsigned int idx) const;
 
     unsigned int itemsCount() const;
-    const icu::UnicodeString& description() const;
-    void setDescription(const icu::UnicodeString& description);
-    const icu::UnicodeString& link() const;
-    void setLink(const icu::UnicodeString& link);
-    const icu::UnicodeString& title() const;
-    void setTitle(const icu::UnicodeString& title);
+    const std::string& description() const;
+    void setDescription(const std::string& description);
+    const std::string& link() const;
+    void setLink(const std::string& link);
+    const std::string& title() const;
+    void setTitle(const std::string& title);
 
-    const std::map<icu::UnicodeString, icu::UnicodeString> &optional() const;
-    void setOptional(const std::map<icu::UnicodeString, icu::UnicodeString> &tags);
+    const std::map<std::string, std::string> &optional() const;
+    void setOptional(const std::map<std::string, std::string> &tags);
 
 private:
-    icu::UnicodeString title_;
-    icu::UnicodeString link_;
-    icu::UnicodeString description_;
+    std::string title_;
+    std::string link_;
+    std::string description_;
     std::vector<RssObject *> items_;
-    std::map<icu::UnicodeString, icu::UnicodeString> optional_;
+    std::map<std::string, std::string> optional_;
 };
 
 } /* namespace rss */

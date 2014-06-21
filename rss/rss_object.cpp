@@ -36,35 +36,35 @@ RssObject::RssObject() :
 RssObject::~RssObject() {
 }
 
-const icu::UnicodeString& RssObject::title() const {
+const std::string& RssObject::title() const {
     return title_;
 }
 
-void RssObject::setTitle(const icu::UnicodeString& caption) {
+void RssObject::setTitle(const std::string& caption) {
     this->title_ = caption;
 }
 
-const icu::UnicodeString& RssObject::text() const {
+const std::string& RssObject::text() const {
     return text_;
 }
 
-void RssObject::setText(const icu::UnicodeString& text) {
+void RssObject::setText(const std::string& text) {
     this->text_ = text;
 }
 
-const icu::UnicodeString& RssObject::link() const {
+const std::string& RssObject::link() const {
     return link_;
 }
 
-void RssObject::setLink(const icu::UnicodeString& link) {
+void RssObject::setLink(const std::string& link) {
     link_ = link;
 }
 
-const icu::UnicodeString& RssObject::guid() const {
+const std::string& RssObject::guid() const {
     return guid_;
 }
 
-void RssObject::setGuid(const icu::UnicodeString& guid) {
+void RssObject::setGuid(const std::string& guid) {
     guid_ = guid;
 }
 

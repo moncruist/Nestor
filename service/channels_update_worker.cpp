@@ -81,19 +81,9 @@ void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
         return;
     }
 
-    string cnvstr; // for converting to UTF-8
-    StringByteSink<string> sink(&cnvstr);
-
-    channel->description().toUTF8(sink);
-    dbchannel->setDescription(cnvstr);
-
-    cnvstr.clear();
-    channel->link().toUTF8(sink);
-    dbchannel->setLink(cnvstr);
-
-    cnvstr.clear();
-    channel->title().toUTF8(sink);
-    dbchannel->setTitle(cnvstr);
+    dbchannel->setDescription(channel->description());
+    dbchannel->setLink(channel->link());
+    dbchannel->setTitle(channel->title());
 
     std::time_t now = time(nullptr);
     std::tm *nowtm = localtime(&now);
@@ -137,15 +127,11 @@ void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
 int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
                                            Channel* channel) {
     Post *dbpost;
-    string cnvstr; // for converting to UTF-8
-    StringByteSink<string> sink(&cnvstr);
-    post->guid().toUTF8(sink);
-    
     try {
-        dbpost = dataProvider_->findPostByGuid(cnvstr);
+        dbpost = dataProvider_->findPostByGuid(post->guid());
     } catch (SqliteProviderException &e) {
         SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssObject: error "
-                        "while finding post with guid: " << cnvstr <<
+                        "while finding post with guid: " << post->guid() <<
                         " Message: " << e.what());
         return -1;
     }
@@ -161,24 +147,17 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
         }
         // Cannot find post with GUID. Storing as new post
         dbpost = new Post();
-        dbpost->setGuid(cnvstr);
+        dbpost->setGuid(post->guid());
         dbpost->setChannelId(channel->id());
 
     }
 
-    cnvstr.clear();
-    post->link().toUTF8(sink);
-    dbpost->setLink(cnvstr);
-
-    cnvstr.clear();
-    post->title().toUTF8(sink);
-    dbpost->setTitle(cnvstr);
+    dbpost->setLink(post->link());
+    dbpost->setTitle(post->title());
 
     // TODO: Make Description and Text different
-    cnvstr.clear();
-    post->text().toUTF8(sink);
-    dbpost->setDescription(cnvstr);
-    dbpost->setText(cnvstr);
+    dbpost->setDescription(post->text());
+    dbpost->setText(post->text());
 
     dbpost->setPublicationDate(post->pubDate());
 
@@ -189,7 +168,7 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
             rc = dataProvider_->updatePost(*dbpost);
         } catch (SqliteProviderException &e) {
             SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssObject: error "
-                            "while updating post with guid: " << cnvstr <<
+                            "while updating post with guid: " << post->guid() <<
                             " id: " << dbpost->id() <<
                             " Message: " << e.what());
             delete dbpost;
@@ -199,7 +178,7 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
             ret = dbpost->id();
         } else {
             SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssObject: cannot "
-                           "update post with guid: " << cnvstr <<
+                           "update post with guid: " << post->guid() <<
                            " id: " << dbpost->id());
             ret = -1;
         }
@@ -208,7 +187,7 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
             ret = dataProvider_->insertPost(*dbpost);
         } catch (SqliteProviderException &e) {
             SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssObject: error "
-                            "while inserting post with guid: " << cnvstr <<
+                            "while inserting post with guid: " << post->guid() <<
                             " Message: " << e.what());
             delete dbpost;
             return -1;
