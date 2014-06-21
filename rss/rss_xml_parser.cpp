@@ -26,6 +26,7 @@
 #include <map>
 
 #include "utils/string.h"
+#include "utils/timestamp.h"
 #include "rss_xml_parser.h"
 
 using namespace std;
@@ -43,7 +44,8 @@ const char *RssXmlParser::TITLE_ITEM = "title";
 const char *RssXmlParser::LINK_ITEM = "link";
 const char *RssXmlParser::DESCRIPTION_ITEM = "description";
 const char *RssXmlParser::ITEM_TAG = "item";
-
+const char *RssXmlParser::GUID_ITEM = "guid";
+const char *RssXmlParser::PUB_DATE_ITEM = "pubDate";
 
 static XMLElement *getExpectedElement(XMLElement *parent, const char *name)
         throw (RssXmlParserException) {
@@ -67,6 +69,22 @@ static vector<RssObject *> *parseItems(XMLElement *channel) {
             obj->setCaption(UnicodeString(getExpectedElement(rssItem, RssXmlParser::TITLE_ITEM)->GetText()));
             obj->setLink(UnicodeString(getExpectedElement(rssItem, RssXmlParser::LINK_ITEM)->GetText()));
             obj->setText(UnicodeString(getExpectedElement(rssItem, RssXmlParser::DESCRIPTION_ITEM)->GetText()));
+
+            XMLElement *guid = rssItem->FirstChildElement(RssXmlParser::GUID_ITEM);
+            if (guid != nullptr)
+                obj->setGuid(UnicodeString(guid->GetText()));
+            else
+                obj->setGuid(obj->link());  // use link as default
+
+            XMLElement *pubDate = rssItem->FirstChildElement();
+            if (pubDate != nullptr) {
+                obj->setPubDate(RFC822ToTimestamp(pubDate->GetText()));
+            } else {
+                // setting current time
+                time_t now = time(nullptr);
+                tm *tmnow = localtime(&now);
+                obj->setPubDate(*tmnow);
+            }
         } catch (RssXmlParserException &e) {
             delete obj;
             rssItem = rssItem->NextSiblingElement(RssXmlParser::ITEM_TAG);

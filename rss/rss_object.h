@@ -21,6 +21,7 @@
 #ifndef RSS_OBJECT_H_
 #define RSS_OBJECT_H_
 
+#include <ctime>
 #include <unicode/unistr.h>
 
 namespace nestor {
@@ -36,11 +37,17 @@ public:
     void setText(const icu::UnicodeString& text);
     const icu::UnicodeString& link() const;
     void setLink(const icu::UnicodeString& link);
+    const icu::UnicodeString& guid() const;
+    void setGuid(const icu::UnicodeString& guid);
+    const std::tm& pubDate() const;
+    void setPubDate(const std::tm& pubDate);
 
 private:
     icu::UnicodeString caption_;
     icu::UnicodeString text_;
     icu::UnicodeString link_;
+    icu::UnicodeString guid_;
+    std::tm pubDate_;
 };
 
 } /* namespace rss */

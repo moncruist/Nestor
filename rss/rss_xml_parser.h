@@ -46,6 +46,8 @@ public:
     static const char *LINK_ITEM;
     static const char *DESCRIPTION_ITEM;
     static const char *ITEM_TAG;
+    static const char *GUID_ITEM;
+    static const char *PUB_DATE_ITEM;
 public:
     static RssChannel *parseRss(const char *rss)
             throw (RssXmlParserException);

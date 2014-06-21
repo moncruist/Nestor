@@ -20,18 +20,20 @@
  */
 
 #include "rss_object.h"
+#include <ctime>
+#include <cstring>
+
+using namespace std;
 
 namespace nestor {
 namespace rss {
 
 RssObject::RssObject() :
-    caption_(""), text_(""), link_("") {
-    // TODO Auto-generated constructor stub
-
+    caption_(""), text_(""), link_(""), guid_("") {
+    memset(&pubDate_, 0, sizeof(tm));
 }
 
 RssObject::~RssObject() {
-    // TODO Auto-generated destructor stub
 }
 
 const icu::UnicodeString& RssObject::caption() const {
@@ -58,5 +60,23 @@ void RssObject::setLink(const icu::UnicodeString& link) {
     link_ = link;
 }
 
+const icu::UnicodeString& RssObject::guid() const {
+    return guid_;
+}
+
+void RssObject::setGuid(const icu::UnicodeString& guid) {
+    guid_ = guid;
+}
+
+const std::tm& RssObject::pubDate() const {
+    return pubDate_;
+}
+
+void RssObject::setPubDate(const std::tm& pubDate) {
+    pubDate_ = pubDate;
+}
+
+
 } /* namespace rss */
 } /* namespace nestor */
+
