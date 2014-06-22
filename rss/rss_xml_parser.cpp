@@ -28,6 +28,7 @@
 #include "utils/string.h"
 #include "utils/timestamp.h"
 #include "rss_xml_parser.h"
+#include "logger.h"
 
 using namespace std;
 using namespace icu;
@@ -76,7 +77,7 @@ static vector<RssObject *> *parseItems(XMLElement *channel) {
             else
                 obj->setGuid(obj->link());  // use link as default
 
-            XMLElement *pubDate = rssItem->FirstChildElement();
+            XMLElement *pubDate = rssItem->FirstChildElement(RssXmlParser::PUB_DATE_ITEM);
             if (pubDate != nullptr) {
                 obj->setPubDate(RFC822ToTimestamp(pubDate->GetText()));
             } else {
