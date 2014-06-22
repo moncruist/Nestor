@@ -42,6 +42,7 @@ void logger_deinit(void);
 #define IMAP_LOGGER_NAME    "imap"
 #define NET_LOGGER_NAME     "net"
 #define SERVICE_LOGGER_NAME "service"
+#define RSS_LOGGER_NAME     "rss"
 
 #define MAIN_LOG_LVL(lvl, txt) LOG_LVL(MAIN_LOGGER_NAME, lvl, txt)
 #define MAIN_LOG(txt) LOG(MAIN_LOGGER_NAME, txt)
@@ -55,5 +56,8 @@ void logger_deinit(void);
 
 #define SERVICE_LOG_LVL(lvl, txt) LOG_LVL(SERVICE_LOGGER_NAME, lvl, txt)
 #define SERVICE_LOG(txt) LOG(SERVICE_LOGGER_NAME, txt)
+
+#define RSS_LOG_LVL(lvl, txt) LOG_LVL(RSS_LOGGER_NAME, lvl, txt)
+#define RSS_LOG(txt) LOG(RSS_LOGGER_NAME, txt)
 
 #endif /* LOGGER_H_ */
