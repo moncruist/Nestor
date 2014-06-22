@@ -2,6 +2,8 @@
 #include <map>
 #include <algorithm>
 #include <cstring>
+#include <memory>
+#include <iostream>
 #include <unicode/unistr.h>
 #include <unicode/bytestream.h>
 #include "channels_update_worker.h"
@@ -71,7 +73,7 @@ void ChannelsUpdateWorker::convertContentCharsetIfNeed(HttpResource* resource) {
  */
 void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
                                             HttpResource* resource, int64_t channelId) {
-    Channel *dbchannel;
+    shared_ptr<Channel> dbchannel;
 
     try {
         dataProvider_->beginTransaction();
@@ -82,7 +84,7 @@ void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
     }
 
     try {
-        dbchannel = dataProvider_->findChannelById(channelId);
+        dbchannel = shared_ptr<Channel>(dataProvider_->findChannelById(channelId));
     } catch (SqliteProviderException &e) {
         SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssChannel: error "
                         "while finding" " channel with id: " << channelId
@@ -108,7 +110,6 @@ void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
         SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssChannel: error "
                         "while updating channel with id: " << channelId
                         << ". Message: " << e.what());
-        delete dbchannel;
         return;
     }
 
@@ -116,7 +117,6 @@ void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
         SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssChannel: error "
                         "while updating channel with id: " << channelId
                         << " Data hasn't stored.");
-        delete dbchannel;
         return;
     }
 
@@ -125,8 +125,6 @@ void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
         RssObject *post = channel->getItem(i);
         updateRssObject(post, dbchannel);
     }
-
-    delete dbchannel;
 
     try {
         dataProvider_->endTransaction();
@@ -142,10 +140,10 @@ void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
  * Updates RSS post of channel feed.
  */
 int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
-                                           Channel* channel) {
-    Post *dbpost = nullptr, *existPost = nullptr;
+                                           shared_ptr<Channel> channel) {
+    shared_ptr<Post> dbpost(nullptr), existPost(nullptr);
     try {
-        dbpost = dataProvider_->findPostByGuid(post->guid());
+        dbpost = shared_ptr<Post>(dataProvider_->findPostByGuid(post->guid()));
     } catch (SqliteProviderException &e) {
         SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssObject: error "
                         "while finding post with guid: " << post->guid() <<
@@ -153,22 +151,22 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
         return -1;
     }
 
+
     bool isUpdate = true;
     if (dbpost == nullptr || dbpost->channelId() != channel->id()) {
         if (dbpost) {
-            delete dbpost;
             isUpdate = true;
         }
         else {
             isUpdate = false;
         }
         // Cannot find post with GUID. Storing as new post
-        dbpost = new Post();
-        dbpost->setGuid(post->guid());
-        dbpost->setChannelId(channel->id());
-
+        if (dbpost == nullptr)
+            dbpost = make_shared<Post>();
     }
 
+    dbpost->setGuid(post->guid());
+    dbpost->setChannelId(channel->id());
     dbpost->setLink(post->link());
     dbpost->setTitle(post->title());
 
@@ -180,9 +178,10 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
 
     bool rc;
     int64_t ret;
+
     if (isUpdate) {
         try {
-            existPost = dataProvider_->findPostByGuid(dbpost->guid());
+            existPost = shared_ptr<Post>(dataProvider_->findPostByGuid(dbpost->guid()));
 
             time_t oldTime, newTime;
             tm t1 = existPost->publicationDate(), t2 = dbpost->publicationDate();
@@ -193,20 +192,15 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
             if (abs(difftime(oldTime, newTime)) < UPDATE_POST_TIME_THRESHOLD_SEC) {
                 SERVICE_LOG_LVL(DEBUG, "ChannelsUpdateWorker::updateRssObject: post " << existPost->guid() << " is not changed");
                 ret = existPost->id();
-                delete existPost;
-                delete dbpost;
                 return ret;
             }
 
-            rc = dataProvider_->updatePost(*dbpost);
+            rc = dataProvider_->updatePost(*dbpost.get());
         } catch (SqliteProviderException &e) {
             SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssObject: error "
                             "while updating post with guid: " << post->guid() <<
                             " id: " << dbpost->id() <<
                             " Message: " << e.what());
-            delete dbpost;
-            if (existPost)
-                delete existPost;
             return -1;
         }
         if (rc) {
@@ -217,21 +211,17 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
                            " id: " << dbpost->id());
             ret = -1;
         }
-        if (existPost)
-            delete existPost;
     } else {
         try {
-            ret = dataProvider_->insertPost(*dbpost);
+            ret = dataProvider_->insertPost(*dbpost.get());
         } catch (SqliteProviderException &e) {
             SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssObject: error "
                             "while inserting post with guid: " << post->guid() <<
                             " Message: " << e.what());
-            delete dbpost;
             return -1;
         }
     }
 
-    delete dbpost;
     return ret;
 }
 

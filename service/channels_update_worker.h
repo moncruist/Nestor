@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstdint>
+#include <memory>
 
 #include "sqlite_connection.h"
 
@@ -58,7 +59,7 @@ private:
 
     void convertContentCharsetIfNeed(nestor::net::HttpResource* resource);
     void updateRssChannel(nestor::rss::RssChannel *channel, nestor::net::HttpResource* resource, int64_t channelId);
-    int64_t updateRssObject(nestor::rss::RssObject *post, Channel *channel);
+    int64_t updateRssObject(nestor::rss::RssObject *post, std::shared_ptr<Channel> channel);
 };
 
 } /* namespace service */
