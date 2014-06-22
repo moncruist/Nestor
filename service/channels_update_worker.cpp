@@ -72,6 +72,15 @@ void ChannelsUpdateWorker::convertContentCharsetIfNeed(HttpResource* resource) {
 void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
                                             HttpResource* resource, int64_t channelId) {
     Channel *dbchannel;
+
+    try {
+        dataProvider_->beginTransaction();
+    } catch (SqliteProviderException &e) {
+        SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssChannel: cannot "
+                        "start transaction. Message: " << e.what());
+        return;
+    }
+
     try {
         dbchannel = dataProvider_->findChannelById(channelId);
     } catch (SqliteProviderException &e) {
@@ -118,6 +127,14 @@ void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
     }
 
     delete dbchannel;
+
+    try {
+        dataProvider_->endTransaction();
+    } catch (SqliteProviderException &e) {
+        SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssChannel: cannot "
+                        "end transaction. Message: " << e.what());
+        return;
+    }
 }
 
 
@@ -126,7 +143,7 @@ void ChannelsUpdateWorker::updateRssChannel(RssChannel* channel,
  */
 int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
                                            Channel* channel) {
-    Post *dbpost;
+    Post *dbpost = nullptr, *existPost = nullptr;
     try {
         dbpost = dataProvider_->findPostByGuid(post->guid());
     } catch (SqliteProviderException &e) {
@@ -165,6 +182,22 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
     int64_t ret;
     if (isUpdate) {
         try {
+            existPost = dataProvider_->findPostByGuid(dbpost->guid());
+
+            time_t oldTime, newTime;
+            tm t1 = existPost->publicationDate(), t2 = dbpost->publicationDate();
+
+            oldTime = mktime(&t1);
+            newTime = mktime(&t2);
+
+            if (abs(difftime(oldTime, newTime)) < UPDATE_POST_TIME_THRESHOLD_SEC) {
+                SERVICE_LOG_LVL(DEBUG, "ChannelsUpdateWorker::updateRssObject: post " << existPost->guid() << " is not changed");
+                ret = existPost->id();
+                delete existPost;
+                delete dbpost;
+                return ret;
+            }
+
             rc = dataProvider_->updatePost(*dbpost);
         } catch (SqliteProviderException &e) {
             SERVICE_LOG_LVL(ERROR, "ChannelsUpdateWorker::updateRssObject: error "
@@ -172,6 +205,8 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
                             " id: " << dbpost->id() <<
                             " Message: " << e.what());
             delete dbpost;
+            if (existPost)
+                delete existPost;
             return -1;
         }
         if (rc) {
@@ -182,6 +217,8 @@ int64_t ChannelsUpdateWorker::updateRssObject(RssObject* post,
                            " id: " << dbpost->id());
             ret = -1;
         }
+        if (existPost)
+            delete existPost;
     } else {
         try {
             ret = dataProvider_->insertPost(*dbpost);

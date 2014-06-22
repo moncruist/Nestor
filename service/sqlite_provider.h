@@ -46,6 +46,16 @@ public:
     virtual ~SqliteProvider();
 
     /**
+     * Starts new transaction
+     */
+    void beginTransaction();
+
+    /**
+     * Ends started transaction
+     */
+    void endTransaction();
+
+    /**
      * Compiles all SQL queries and commands.
      */
     void prepareStatements();
@@ -254,8 +264,11 @@ private:
 
 private:
     enum Statements {
+        // TRANSACTIONS ---------------
+        STATEMENT_BEGIN_TRANSACTION = 0,
+        STATEMENT_END_TRANSACTION,
         // USER table -----------------
-        STATEMENT_CREATE_USER_TABLE = 0,
+        STATEMENT_CREATE_USER_TABLE,
         STATEMENT_FIND_USER_BY_USERNAME,
         STATEMENT_FIND_USER_BY_ID,
         STATEMENT_INSERT_NEW_USER,

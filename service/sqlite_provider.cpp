@@ -32,6 +32,12 @@ namespace nestor {
 namespace service {
 
 const char *SqliteProvider::SQL_STATEMENTS[STATEMENTS_LENGTH] = {
+        // --------- STATEMENT_BEGIN_TRANSACTION -----------------
+        "BEGIN TRANSACTION;",
+        // -------------------------------------------------------
+        // --------- STATEMENT_END_TRANSACTION -----------------
+        "END TRANSACTION;",
+        // -------------------------------------------------------
         // --------- STATEMENT_CREATE_USER_TABLE------------------
         "CREATE TABLE IF NOT EXISTS `users`("
         "`user_id` INTEGER PRIMARY KEY ASC AUTOINCREMENT NOT NULL,"
@@ -218,6 +224,35 @@ void SqliteProvider::prepareStatements() {
             sqlite3_prepare_v2(connection_->handle(), SQL_STATEMENTS[i], -1,
                     &compiledStatements_[i], NULL);
         }
+    }
+}
+
+void SqliteProvider::beginTransaction() {
+    lock_guard<recursive_mutex> locker(lock_);
+    sqlite3_stmt *stmt = getStatement(STATEMENT_BEGIN_TRANSACTION);
+    sqlite3_reset(stmt);
+    int ret = sqlite3_step(stmt);
+    if (ret != SQLITE_DONE) {
+        ostringstream oss;
+        oss << "SqliteProvider::beginTransaction: error while executing SQL query: code=" << ret << " msg="
+            << sqlite3_errmsg(connection_->handle());
+        SERVICE_LOG_LVL(ERROR, oss.str());
+        throw SqliteProviderException(oss.str());
+    }
+}
+
+
+void SqliteProvider::endTransaction() {
+    lock_guard<recursive_mutex> locker(lock_);
+    sqlite3_stmt *stmt = getStatement(STATEMENT_END_TRANSACTION);
+    sqlite3_reset(stmt);
+    int ret = sqlite3_step(stmt);
+    if (ret != SQLITE_DONE) {
+        ostringstream oss;
+        oss << "SqliteProvider::endTransaction: error while executing SQL query: code=" << ret << " msg="
+            << sqlite3_errmsg(connection_->handle());
+        SERVICE_LOG_LVL(ERROR, oss.str());
+        throw SqliteProviderException(oss.str());
     }
 }
 

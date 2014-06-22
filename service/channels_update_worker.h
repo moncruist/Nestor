@@ -46,6 +46,13 @@ private:
     SqliteConnection *databaseConnection_;
     SqliteProvider *dataProvider_;
 
+    /**
+     * Time in seconds. If new post with same GUID have pubDate newer
+     * than stored in database more than this constant, than post will be
+     * updated, otherwise not.
+     */
+    static const int UPDATE_POST_TIME_THRESHOLD_SEC = 3600;
+
 private:
 
 
