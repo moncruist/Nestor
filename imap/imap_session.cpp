@@ -20,7 +20,7 @@
  */
 #include <vector>
 #include <sstream>
-#include "logger.h"
+#include "common/logger.h"
 #include "imap_session.h"
 #include "utils/string.h"
 

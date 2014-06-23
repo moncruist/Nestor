@@ -13,7 +13,7 @@ ADD_CUSTOM_COMMAND(TARGET tests POST_BUILD
   COMMAND "nestor_tests")
 ADD_CUSTOM_TARGET(tests "nestor_tests" DEPENDS nestor_tests COMMENT "Running CPPUNIT nestor_tests...")
 
-target_link_libraries(nestor_tests nestorcom                                       
+target_link_libraries(nestor_tests nestorcommon                                       
                                    nestornet
                                    nestorrss
                                    nestorimap

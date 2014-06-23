@@ -3,8 +3,6 @@ project(nestor)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
-
-set(NESTOR_LIB_LIST logger.cpp)
              
 include_directories(${nestor_SOURCE_DIR})
 include_directories(${nestor_SOURCE_DIR}/include)
@@ -83,6 +81,7 @@ endif(UNIX)
 include_directories(lib/sqlite-amalgamation-3080403)
 add_subdirectory(lib/sqlite-amalgamation-3080403)
 
+add_subdirectory(common)
 add_subdirectory(net)
 add_subdirectory(imap)
 add_subdirectory(rss)
@@ -90,19 +89,14 @@ add_subdirectory(utils)
 add_subdirectory(service)
 
 
-
-add_library (nestorcom ${NESTOR_LIB_LIST})
-
 add_subdirectory(tests)
 
 add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} nestorcom
+target_link_libraries(${PROJECT_NAME} nestorcommon
                                       nestorservice
                                       nestornet
-                                      
                                       nestorrss
                                       nestorimap
-                                      
                                       nestorutils
                                       ${NESTOR_LIB_LINKS})
 

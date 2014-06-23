@@ -21,7 +21,7 @@
 #include <string>
 #include <cstring>
 #include <sstream>
-#include "logger.h"
+#include "common/logger.h"
 #include "sqlite_provider.h"
 #include "utils/timestamp.h"
 

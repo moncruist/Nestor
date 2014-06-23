@@ -25,7 +25,7 @@
 #include <cstring>
 
 #include <curl/curl.h>
-#include "logger.h"
+#include "common/logger.h"
 #include "http_response_parser.h"
 #include "utils/string.h"
 

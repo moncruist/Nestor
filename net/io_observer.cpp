@@ -26,7 +26,7 @@
 #include <stdexcept>
 #include <algorithm>
 
-#include "logger.h"
+#include "common/logger.h"
 #include "io_observer.h"
 
 using namespace std;

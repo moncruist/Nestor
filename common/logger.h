@@ -27,9 +27,14 @@
 #include <iomanip>
 #include <string>
 
+namespace nestor {
+namespace common {
+
 void logger_init(const std::string &logFile);
 void logger_deinit(void);
 
+}
+}
 
 #define LOG_LVL(name, lvl, txt) do { \
     log4cplus::Logger logger = log4cplus::Logger::getInstance(LOG4CPLUS_TEXT(name));    \

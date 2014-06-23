@@ -34,12 +34,13 @@
 #include <iomanip>
 #include <log4cplus/helpers/property.h>
 #include <log4cplus/asyncappender.h>
-#include "logger.h"
+#include "common/logger.h"
 #include "imap_session_test.h"
 #include "imap_string_test.h"
 
 using namespace std;
 using namespace log4cplus;
+using namespace nestor::common;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( ImapSessionTest );
 CPPUNIT_TEST_SUITE_REGISTRATION( ImapStringTest );

@@ -19,7 +19,7 @@
  *  along with this program.  If not, see {http://www.gnu.org/licenses/}.
  */
 #include "service.h"
-#include "logger.h"
+#include "common/logger.h"
 
 namespace nestor {
 namespace service {

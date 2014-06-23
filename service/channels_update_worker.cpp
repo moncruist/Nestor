@@ -12,7 +12,7 @@
 #include "net/http_resource.h"
 #include "rss/rss_channel.h"
 #include "rss/rss_xml_parser.h"
-#include "logger.h"
+#include "common/logger.h"
 #include "utils/string.h"
 
 using namespace std;

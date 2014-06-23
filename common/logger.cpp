@@ -31,6 +31,9 @@
 using namespace std;
 using namespace log4cplus;
 
+namespace nestor {
+namespace common {
+
 void logger_init(const string &logFile) {
     log4cplus::initialize();
 
@@ -54,3 +57,6 @@ void logger_init(const string &logFile) {
 void logger_deinit(void) {
     Logger::shutdown();
 }
+
+} /* namespace common */
+} /* namespace nestor */

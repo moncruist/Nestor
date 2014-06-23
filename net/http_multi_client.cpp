@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <sstream>
 #include "http_multi_client.h"
-#include "logger.h"
+#include "common/logger.h"
 
 using namespace std;
 

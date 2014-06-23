@@ -37,11 +37,12 @@
 #include "net/socket_single.h"
 #include "imap/imap_session.h"
 #include "service/service.h"
+#include "service/channels_update_worker.h"
 
 #include <unicode/ucnv.h>
 #include <unicode/utypes.h>
 
-#include "logger.h"
+#include "common/logger.h"
 
 #include "rss/rss_xml_parser.h"
 #include "rss/rss_channel.h"
@@ -53,6 +54,7 @@ using namespace nestor::net;
 using namespace nestor::rss;
 using namespace nestor::imap;
 using namespace nestor::service;
+using namespace nestor::common;
 using namespace icu;
 
 static vector<ImapSession *> closedSessions;
@@ -94,8 +96,32 @@ void checkDatabase(SqliteConnection *connection) {
     SqliteProvider prov(connection);
     prov.createUsersTable();
     prov.createChannelsTable();
-    prov.createFeedsTable();
+    prov.createPostsTable();
     prov.createSubsriptionTable();
+}
+
+void testWorker(SqliteConnection *connection) {
+    MAIN_LOG("Testing ChannelsUpdateWorker");
+    SqliteProvider prov(connection);
+
+    Channel *channel = prov.findChannelByRssLink("http://lenta.ru/rss");
+    MAIN_LOG("Not found. Creating one");
+    if (channel == nullptr) {
+        channel = new Channel();
+        channel->setRssLink("http://lenta.ru/rss");
+        channel->setDescription("http://lenta.ru/rss");
+        channel->setLink("http://lenta.ru/rss");
+        channel->setTitle("http://lenta.ru/rss");
+        channel->setUpdateInterval(3600);
+        time_t t = time(nullptr);
+        tm *now = localtime(&t);
+        channel->setLastUpdate(*now);
+
+        channel->setId(prov.insertChannel(*channel));
+    }
+
+    ChannelsUpdateWorker worker({channel->id()}, connection);
+    worker.run();
 }
 
 
@@ -113,6 +139,12 @@ int main(int argc, char *argv[]) {
     connection->open();
 
     checkDatabase(connection);
+    testWorker(connection);
+
+    HttpClient client;
+    HttpResource *res = client.getResource("http://lenta.ru/rss");
+    cout << "Resource content-length: "  << res->contentLength() << " strlen: " << strlen(reinterpret_cast<char *>(res->content()))
+            << " " << res->contentLength() + 1 << " byte: " << (int)res->content()[res->contentLength()]<< endl;
 
     MAIN_LOG("Starting Nestor server");
 

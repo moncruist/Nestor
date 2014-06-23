@@ -28,7 +28,7 @@
 #include "utils/string.h"
 #include "utils/timestamp.h"
 #include "rss_xml_parser.h"
-#include "logger.h"
+#include "common/logger.h"
 
 using namespace std;
 using namespace icu;
